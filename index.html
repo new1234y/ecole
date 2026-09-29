@@ -3,314 +3,1238 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestion des Groupes</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Annuaire ENT — Lycée Joliot-Curie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --surface: #151921;
+      --surface2: #1c2230;
+      --border: rgba(255,255,255,.08);
+      --text: #e8ecf4;
+      --muted: #8b95a8;
+      --accent: #5b8def;
+      --accent2: #7c5cff;
+      --student: #3ecf8e;
+      --teacher: #f5a623;
+      --personnel: #64b5f6;
+      --relative: #e879a9;
+      --radius: 14px;
+      --shadow: 0 8px 32px rgba(0,0,0,.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(91,141,239,.18), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(124,92,255,.12), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 400;
+      letter-spacing: -.02em;
+    }
+
+    .brand p { color: var(--muted); font-size: .95rem; margin-top: 4px; }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font: inherit;
+      font-size: .85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+    }
+
+    .btn-action:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #4a7be0;
+    }
+
+    .stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: .85rem;
+    }
+
+    .stat-pill strong { color: var(--accent); font-weight: 600; }
+
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { position: static !important; }
+    }
+
+    /* Sidebar */
+    aside {
+      position: sticky;
+      top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .filter-section { margin-bottom: 20px; }
+    .filter-section:last-child { margin-bottom: 0; }
+
+    .filter-label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .search-box {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px 10px 38px;
+      color: var(--text);
+      font: inherit;
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .search-box:focus { border-color: var(--accent); }
+
+    .search-wrap { position: relative; }
+    .search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: .45;
+      width: 16px;
+      height: 16px;
+    }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .15s;
+      user-select: none;
+    }
+
+    .chip:hover { border-color: rgba(255,255,255,.2); color: var(--text); }
+    .chip.active { color: #fff; border-color: transparent; }
+    .chip[data-type="Student"].active { background: var(--student); }
+    .chip[data-type="Teacher"].active { background: var(--teacher); color: #1a1200; }
+    .chip[data-type="Personnel"].active { background: var(--personnel); }
+    .chip[data-type="Relative"].active { background: var(--relative); }
+
+    select.filter-select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      color: var(--text);
+      font: inherit;
+      font-size: .85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .85rem;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px 0;
+    }
+
+    .toggle-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+    .btn-reset {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font: inherit;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Main */
+    main { min-width: 0; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .result-count { font-size: .9rem; color: var(--muted); }
+    .result-count span { color: var(--text); font-weight: 600; }
+
+    .view-tabs {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .view-tab {
+      padding: 7px 14px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: .82rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .view-tab.active { background: var(--surface2); color: var(--text); }
+
+    /* Cards grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s, box-shadow .15s;
+      animation: fadeIn .3s ease both;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(91,141,239,.35);
+      box-shadow: var(--shadow);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-top {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .85rem;
+      flex-shrink: 0;
+      color: #fff;
+    }
+
+    .avatar.Student { background: linear-gradient(135deg, #2da86a, var(--student)); }
+    .avatar.Teacher { background: linear-gradient(135deg, #d4890f, var(--teacher)); color: #1a1200; }
+    .avatar.Personnel { background: linear-gradient(135deg, #3d8fd4, var(--personnel)); }
+    .avatar.Relative { background: linear-gradient(135deg, #c44d7a, var(--relative)); }
+
+    .card-name {
+      font-weight: 600;
+      font-size: .95rem;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: .68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 4px;
+    }
+
+    .badge.Student { background: rgba(62,207,142,.15); color: var(--student); }
+    .badge.Teacher { background: rgba(245,166,35,.15); color: var(--teacher); }
+    .badge.Personnel { background: rgba(100,181,246,.15); color: var(--personnel); }
+    .badge.Relative { background: rgba(232,121,169,.15); color: var(--relative); }
+
+    .card-meta { font-size: .78rem; color: var(--muted); }
+    .card-meta div { margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+
+    .tag {
+      font-size: .68rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .tag.class { color: var(--accent); border-color: rgba(91,141,239,.25); }
+    .tag.new-class { color: #3ecf8e; border-color: rgba(62,207,142,.3); }
+    .tag.group { color: #f5a623; border-color: rgba(245,166,35,.3); }
+
+    /* List view */
+    .list-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .list-table th {
+      text-align: left;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      padding: 12px 16px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .list-table td {
+      padding: 12px 16px;
+      font-size: .85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .list-table tr { cursor: pointer; transition: background .1s; }
+    .list-table tbody tr:hover { background: rgba(91,141,239,.06); }
+    .list-table tr:last-child td { border-bottom: none; }
+
+    /* Class view */
+    .class-section { margin-bottom: 28px; }
+
+    .class-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .class-header h3 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+    }
+
+    .class-count {
+      font-size: .78rem;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    /* Modal & Form */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      max-width: 580px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,.5);
+      animation: modalIn .25s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(.96) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      padding: 24px 24px 16px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .modal-header .avatar { width: 56px; height: 56px; font-size: 1rem; border-radius: 14px; }
+
+    .modal-close {
+      margin-left: auto;
+      background: var(--surface2);
+      border: none;
+      color: var(--muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover { color: var(--text); }
+
+    .modal-body { padding: 0 24px 24px; }
+
+    .detail-section { margin-top: 18px; }
+    .detail-section h4 {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .detail-item {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: .82rem;
+    }
+
+    .detail-item .label { color: var(--muted); font-size: .72rem; margin-bottom: 2px; }
+    .detail-item .value { word-break: break-word; }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font: inherit;
+      font-size: .85rem;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent);
+    }
+
+    .relation-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border-radius: 10px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background .15s;
+      border: 1px solid transparent;
+    }
+
+    .relation-link:hover { border-color: rgba(91,141,239,.3); background: rgba(91,141,239,.08); }
+
+    .motto {
+      font-style: italic;
+      color: var(--muted);
+      font-size: .88rem;
+      padding: 12px;
+      border-left: 3px solid var(--accent2);
+      background: var(--surface2);
+      border-radius: 0 10px 10px 0;
+    }
+
+    .tags-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    .loading {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+    }
+
+    .empty h3 { color: var(--text); margin-bottom: 8px; font-weight: 500; }
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
-
-  <!-- En-tête -->
-  <header class="bg-slate-900 text-white p-4 shadow-md flex justify-between items-center">
-    <h1 class="text-xl font-bold">Gestionnaire de Groupes</h1>
-    <div class="flex items-center gap-4">
-      <label class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg cursor-pointer text-sm font-medium transition">
-        Importer JSON
-        <input type="file" id="jsonInput" accept=".json" class="hidden">
-      </label>
-      <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50" disabled>
-        Exporter JSON
-      </button>
-    </div>
-  </header>
-
-  <!-- Contenu Principal -->
-  <main class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
-    
-    <!-- Colonne de gauche : Annuaire des personnes -->
-    <section class="lg:col-span-5 bg-white p-5 rounded-xl shadow flex flex-col h-[780px]">
-      <h2 class="text-lg font-semibold border-b pb-3 mb-4">Annuaire des membres</h2>
-      
-      <!-- Filtres et recherche -->
-      <div class="space-y-3 mb-4">
-        <input type="text" id="searchInput" placeholder="Rechercher un nom..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-        <div class="flex gap-2">
-          <select id="classFilter" class="w-1/2 border border-slate-300 rounded-lg p-2 text-sm outline-none">
-            <option value="">Toutes les classes</option>
-          </select>
-          <select id="typeFilter" class="w-1/2 border border-slate-300 rounded-lg p-2 text-sm outline-none">
-            <option value="">Tous les rôles</option>
-            <option value="Student">Élève</option>
-            <option value="Teacher">Enseignant</option>
-            <option value="Personnel">Personnel</option>
-          </select>
-        </div>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <h1 id="schoolTitle">Annuaire ENT</h1>
+        <p id="schoolSubtitle">Chargement…</p>
       </div>
 
-      <!-- Liste des personnes -->
-      <div id="peopleList" class="flex-1 overflow-y-auto space-y-2 pr-1 border-t pt-3">
-        <p class="text-slate-400 text-sm text-center mt-10">Veuillez importer un fichier JSON.</p>
-      </div>
-    </section>
-
-    <!-- Colonne de droite : Gestion des groupes -->
-    <section class="lg:col-span-7 bg-white p-5 rounded-xl shadow flex flex-col h-[780px]">
-      <h2 class="text-lg font-semibold border-b pb-3 mb-4">Groupes</h2>
-
-      <!-- Création de groupe -->
-      <div class="flex gap-2 mb-6">
-        <input type="text" id="newGroupName" placeholder="Nom du nouveau groupe (ex: Groupe Projets)..." class="flex-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-        <button id="createGroupBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-          Créer Groupe
+      <div class="header-actions">
+        <input type="file" id="jsonFileInput" accept=".json" style="display:none">
+        <button class="btn-action" id="importJsonBtn">
+          📁 Importer JSON
+        </button>
+        <button class="btn-action" id="exportJsonBtn">
+          💾 Exporter JSON
         </button>
       </div>
 
-      <!-- Sélecteur de groupe actif -->
-      <div class="mb-4">
-        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Groupe sélectionné</label>
-        <select id="groupSelect" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none font-medium">
-          <option value="">-- Aucun groupe --</option>
-        </select>
-      </div>
+      <div class="stats-row" id="statsRow"></div>
+    </header>
 
-      <!-- Zone du groupe sélectionné -->
-      <div id="activeGroupContainer" class="flex-1 border rounded-xl p-4 flex flex-col bg-slate-50">
-        <div class="flex justify-between items-center mb-4">
-          <h3 id="activeGroupName" class="font-bold text-slate-700">Aucun groupe sélectionné</h3>
-          <button id="deleteGroupBtn" class="text-red-500 hover:text-red-700 text-xs font-semibold hidden">Supprimer ce groupe</button>
+    <div class="layout">
+      <aside>
+        <div class="filter-section">
+          <div class="filter-label">Recherche</div>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" class="search-box" id="searchInput" placeholder="Nom, login, classe…">
+          </div>
         </div>
 
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Membres affectés (<span id="memberCount">0</span>)</p>
-        
-        <div id="groupMembersList" class="flex-1 overflow-y-auto space-y-2 pr-1 bg-white border rounded-lg p-3">
-          <p class="text-slate-400 text-sm text-center mt-10">Sélectionnez un groupe pour voir ses membres.</p>
+        <div class="filter-section">
+          <div class="filter-label">Profil</div>
+          <div class="chips" id="typeChips"></div>
         </div>
-      </div>
-    </section>
 
-  </main>
+        <div class="filter-section">
+          <div class="filter-label">Ancienne classe</div>
+          <select class="filter-select" id="oldClassFilter">
+            <option value="">Toutes les anciennes classes</option>
+          </select>
+        </div>
 
+        <div class="filter-section">
+          <div class="filter-label">Nouvelle classe</div>
+          <select class="filter-select" id="newClassFilter">
+            <option value="">Toutes les nouvelles classes</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-label">Matière (enseignants)</div>
+          <select class="filter-select" id="subjectFilter">
+            <option value="">Toutes les matières</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-label">Options</div>
+          <label class="toggle-row"><input type="checkbox" id="relationsOnly"> Avec relations</label>
+          <label class="toggle-row"><input type="checkbox" id="teachersOnly"> Enseignants actifs</label>
+          <label class="toggle-row"><input type="checkbox" id="federatedOnly"> Comptes fédérés</label>
+        </div>
+
+        <button class="btn-reset" id="resetBtn">Réinitialiser les filtres</button>
+      </aside>
+
+      <main>
+        <div class="toolbar">
+          <div class="result-count">Affichage de <span id="resultCount">0</span> personnes</div>
+          <div class="view-tabs">
+            <button class="view-tab active" data-view="grid">Grille</button>
+            <button class="view-tab" data-view="list">Liste</button>
+            <button class="view-tab" data-view="class">Par classe</button>
+          </div>
+        </div>
+        <div id="content">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            Chargement de l'annuaire…
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modal" role="dialog"></div>
+  </div>
+
+  <!-- Datalist dynamique pour suggérer les classes existantes lors de la saisie -->
+  <datalist id="classSuggestions"></datalist>
+
+  <script src="annuaire_data.js"></script>
   <script>
-    let dbRawData = null;
-    let users = [];
-    let groups = {}; // Format : { "NomGroupe": ["id_user1", "id_user2"] }
-    let activeGroupName = null;
+    let DATA = null;
+    let USERS = [];
+    let USER_MAP = {};
 
-    // Dom Elements
-    const jsonInput = document.getElementById('jsonInput');
-    const exportBtn = document.getElementById('exportBtn');
-    const peopleList = document.getElementById('peopleList');
-    const classFilter = document.getElementById('classFilter');
-    const typeFilter = document.getElementById('typeFilter');
-    const searchInput = document.getElementById('searchInput');
-    const newGroupName = document.getElementById('newGroupName');
-    const createGroupBtn = document.getElementById('createGroupBtn');
-    const groupSelect = document.getElementById('groupSelect');
-    const activeGroupNameEl = document.getElementById('activeGroupName');
-    const groupMembersList = document.getElementById('groupMembersList');
-    const memberCount = document.getElementById('memberCount');
-    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
+    let globalOldClasses = new Set();
+    let globalNewClasses = new Set();
+    let globalGroups = new Set();
 
-    // Importation JSON
-    jsonInput.addEventListener('change', (e) => {
+    let state = {
+      search: '',
+      types: new Set(),
+      oldClassName: '',
+      newClassName: '',
+      subject: '',
+      relationsOnly: false,
+      teachersOnly: false,
+      federatedOnly: false,
+      view: 'grid'
+    };
+
+    const TYPE_LABELS = {
+      Student: 'Élève',
+      Teacher: 'Enseignant',
+      Personnel: 'Personnel',
+      Relative: 'Parent'
+    };
+
+    function initials(name) {
+      if (!name) return '?';
+      const parts = name.replace(/[^a-zA-ZÀ-ÿ\s-]/g, '').trim().split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function loadData() {
+      if (window.ANNUAIRE_DATA) {
+        processLoadedData(window.ANNUAIRE_DATA);
+      } else {
+        try {
+          const res = await fetch('annuaire_data.json');
+          if (!res.ok) throw new Error('Fichier annuaire_data.json introuvable');
+          const data = await res.json();
+          processLoadedData(data);
+        } catch (err) {
+          document.getElementById('content').innerHTML = `
+            <div class="empty">
+              <h3>Aucune donnée chargée</h3>
+              <p>Importez un fichier JSON avec le bouton <strong>📁 Importer JSON</strong> en haut à droite.</p>
+              <p style="margin-top:8px;font-size:.82rem;color:#f87171">${escapeHtml(err.message)}</p>
+            </div>`;
+        }
+      }
+    }
+
+    function processLoadedData(data) {
+      DATA = data;
+      USERS = DATA.users || [];
+
+      globalOldClasses.clear();
+      globalNewClasses.clear();
+      globalGroups.clear();
+
+      USERS.forEach(u => {
+        u.oldClasses = u.oldClasses || u.classes || [];
+        u.newClasses = u.newClasses || [];
+        u.groups = u.groups || [];
+
+        u.oldClasses.forEach(c => globalOldClasses.add(c));
+        u.newClasses.forEach(c => globalNewClasses.add(c));
+        u.groups.forEach(g => globalGroups.add(g));
+      });
+
+      USER_MAP = Object.fromEntries(USERS.map(u => [u.id, u]));
+
+      const school = DATA.school || {};
+      document.getElementById('schoolTitle').textContent = 'Annuaire ENT';
+      document.getElementById('schoolSubtitle').textContent =
+        `${school.name || 'Établissement'} · ${school.city || ''} · UAI ${school.UAI || '—'}`;
+
+      rebuildDatalist();
+      renderStats();
+      renderTypeChips();
+      renderClassFilters();
+      renderSubjectFilter();
+      applyFilters();
+    }
+
+    function rebuildDatalist() {
+      const datalist = document.getElementById('classSuggestions');
+      datalist.innerHTML = '';
+      const allKnownClasses = new Set([...globalOldClasses, ...globalNewClasses]);
+      Array.from(allKnownClasses).sort().forEach(cls => {
+        const opt = document.createElement('option');
+        opt.value = cls;
+        datalist.appendChild(opt);
+      });
+    }
+
+    function renderStats() {
+      const s = DATA.stats || {};
+      const totalCount = USERS.length;
+      const row = document.getElementById('statsRow');
+      row.innerHTML = `
+        <div class="stat-pill"><strong>${totalCount}</strong> personnes</div>
+        <div class="stat-pill"><strong>${globalOldClasses.size}</strong> anc. classes</div>
+        <div class="stat-pill"><strong>${globalNewClasses.size}</strong> nouv. classes</div>
+        <div class="stat-pill"><strong>${globalGroups.size}</strong> groupes</div>
+      `;
+    }
+
+    function renderTypeChips() {
+      const el = document.getElementById('typeChips');
+      const types = ['Student', 'Teacher', 'Personnel', 'Relative'];
+      el.innerHTML = types.map(t => `
+        <button class="chip" data-type="${t}">${TYPE_LABELS[t] || t}</button>
+      `).join('');
+
+      el.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const t = chip.dataset.type;
+          if (state.types.has(t)) { state.types.delete(t); chip.classList.remove('active'); }
+          else { state.types.add(t); chip.classList.add('active'); }
+          applyFilters();
+        });
+      });
+    }
+
+    function renderClassFilters() {
+      const oldSel = document.getElementById('oldClassFilter');
+      oldSel.innerHTML = '<option value="">Toutes les anciennes classes</option>';
+      Array.from(globalOldClasses).sort().forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        oldSel.appendChild(opt);
+      });
+
+      const newSel = document.getElementById('newClassFilter');
+      newSel.innerHTML = '<option value="">Toutes les nouvelles classes</option>';
+      Array.from(globalNewClasses).sort().forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        newSel.appendChild(opt);
+      });
+    }
+
+    function renderSubjectFilter() {
+      const sel = document.getElementById('subjectFilter');
+      sel.innerHTML = '<option value="">Toutes les matières</option>';
+      const subjects = new Set();
+      USERS.forEach(u => (u.subjects || []).forEach(s => subjects.add(s)));
+      Array.from(subjects).sort().forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        sel.appendChild(opt);
+      });
+    }
+
+    function filterUsers() {
+      const q = state.search.toLowerCase().trim();
+      return USERS.filter(u => {
+        if (state.types.size && !state.types.has(u.type)) return false;
+        if (state.oldClassName && !u.oldClasses.includes(state.oldClassName)) return false;
+        if (state.newClassName && !u.newClasses.includes(state.newClassName)) return false;
+        if (state.subject && !(u.subjects || []).includes(state.subject)) return false;
+        if (state.relationsOnly && !(u.relations && u.relations.length)) return false;
+        if (state.teachersOnly && u.type !== 'Teacher') return false;
+        if (state.federatedOnly && !u.federated) return false;
+        if (q) {
+          const hay = [
+            u.displayName, u.login, u.loginAlias,
+            ...u.oldClasses, ...u.newClasses, ...(u.subjects || []), ...(u.groups || []),
+            u.externalId
+          ].join(' ').toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderCard(u, i) {
+      const relCount = (u.relations || []).length;
+      return `
+        <article class="card" data-id="${u.id}" style="animation-delay:${Math.min(i * 15, 300)}ms">
+          <div class="card-top">
+            <div class="avatar ${u.type}">${initials(u.displayName)}</div>
+            <div>
+              <div class="card-name">${escapeHtml(u.displayName)}</div>
+              <span class="badge ${u.type}">${TYPE_LABELS[u.type] || u.type}</span>
+            </div>
+          </div>
+          <div class="card-meta">
+            ${u.login ? `<div>@${escapeHtml(u.login)}</div>` : ''}
+            ${u.newClasses.length ? `<div>Nouv. : ${u.newClasses.join(', ')}</div>` : (u.oldClasses.length ? `<div>Anc. : ${u.oldClasses.slice(0, 2).join(', ')}</div>` : '')}
+            ${relCount ? `<div>🔗 ${relCount} relation${relCount > 1 ? 's' : ''}</div>` : ''}
+          </div>
+          <div class="tag-row">
+            ${u.newClasses.map(c => `<span class="tag new-class">Nouv: ${escapeHtml(c)}</span>`).join('')}
+            ${u.oldClasses.slice(0, 2).map(c => `<span class="tag class">${escapeHtml(c)}</span>`).join('')}
+            ${u.groups.slice(0, 2).map(g => `<span class="tag group">${escapeHtml(g)}</span>`).join('')}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderGrid(users) {
+      return `<div class="grid">${users.map(renderCard).join('')}</div>`;
+    }
+
+    function renderList(users) {
+      return `
+        <table class="list-table">
+          <thead><tr>
+            <th>Nom</th><th>Profil</th><th>Login</th><th>Ancienne classe</th><th>Nouvelle classe</th><th>Groupes</th>
+          </tr></thead>
+          <tbody>
+            ${users.map(u => `
+              <tr data-id="${u.id}">
+                <td><strong>${escapeHtml(u.displayName)}</strong></td>
+                <td><span class="badge ${u.type}">${TYPE_LABELS[u.type] || u.type}</span></td>
+                <td>${escapeHtml(u.login || '—')}</td>
+                <td>${escapeHtml(u.oldClasses.join(', ') || '—')}</td>
+                <td><strong style="color:var(--student)">${escapeHtml(u.newClasses.join(', ') || '—')}</strong></td>
+                <td>${escapeHtml(u.groups.join(', ') || '—')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderByClass(users) {
+      const byClass = {};
+      users.forEach(u => {
+        const cls = u.newClasses.length ? u.newClasses : (u.oldClasses.length ? u.oldClasses : ['Sans classe']);
+        cls.forEach(c => {
+          if (!byClass[c]) byClass[c] = [];
+          byClass[c].push(u);
+        });
+      });
+      const sorted = Object.keys(byClass).sort((a, b) => {
+        if (a === 'Sans classe') return 1;
+        if (b === 'Sans classe') return -1;
+        return a.localeCompare(b, 'fr', { numeric: true });
+      });
+      return sorted.map(c => `
+        <section class="class-section">
+          <div class="class-header">
+            <h3>${escapeHtml(c)}</h3>
+            <span class="class-count">${byClass[c].length} personne${byClass[c].length > 1 ? 's' : ''}</span>
+          </div>
+          <div class="grid">${byClass[c].map(renderCard).join('')}</div>
+        </section>
+      `).join('');
+    }
+
+    function applyFilters() {
+      const users = filterUsers();
+      document.getElementById('resultCount').textContent = users.length;
+      const content = document.getElementById('content');
+
+      if (!users.length) {
+        content.innerHTML = `<div class="empty"><h3>Aucun résultat</h3><p>Essayez de modifier vos filtres ou votre recherche.</p></div>`;
+        return;
+      }
+
+      if (state.view === 'grid') content.innerHTML = renderGrid(users);
+      else if (state.view === 'list') content.innerHTML = renderList(users);
+      else content.innerHTML = renderByClass(users);
+
+      content.querySelectorAll('[data-id]').forEach(el => {
+        el.addEventListener('click', () => openModal(el.dataset.id));
+      });
+    }
+
+    function openModal(id, isEditing = false) {
+      const u = USER_MAP[id];
+      if (!u) return;
+
+      const school = u.school || DATA.school || {};
+
+      if (isEditing) {
+        document.getElementById('modal').innerHTML = `
+          <div class="modal-header">
+            <div class="avatar ${u.type}">${initials(u.displayName)}</div>
+            <div>
+              <h2 style="font-size:1.2rem;font-weight:600">Modifier : ${escapeHtml(u.displayName)}</h2>
+              <span class="badge ${u.type}">${TYPE_LABELS[u.type] || u.type}</span>
+            </div>
+            <button class="modal-close" id="modalClose">×</button>
+          </div>
+          <div class="modal-body">
+            <form id="editForm">
+              <div class="form-group">
+                <label>Nom d'affichage</label>
+                <input type="text" class="form-control" id="editDisplayName" value="${escapeHtml(u.displayName)}">
+              </div>
+
+              <div class="form-group">
+                <label>Anciennes classes (séparées par une virgule)</label>
+                <input type="text" class="form-control" id="editOldClasses" value="${escapeHtml(u.oldClasses.join(', '))}">
+              </div>
+
+              <div class="form-group">
+                <label>Nouvelle(s) classe(s) (taper les 1res lettres pour auto-compléter)</label>
+                <input type="text" class="form-control" id="editNewClasses" list="classSuggestions" value="${escapeHtml(u.newClasses.join(', '))}" placeholder="Ex: 1G2, 2ND1...">
+              </div>
+
+              <div class="form-group">
+                <label>Groupes (ex: pro B, 1NSI1 - séparés par des virgules)</label>
+                <input type="text" class="form-control" id="editGroups" value="${escapeHtml(u.groups.join(', '))}" placeholder="Ex: pro B, Anglais LVA">
+              </div>
+
+              <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+                <button type="button" class="btn-action" id="cancelEditBtn">Annuler</button>
+                <button type="submit" class="btn-action btn-primary">Enregistrer les modifications</button>
+              </div>
+            </form>
+          </div>
+        `;
+
+        document.getElementById('editNewClasses').addEventListener('input', (e) => {
+          const val = e.target.value.trim();
+          if (val) {
+            const matches = Array.from(globalOldClasses).filter(c => c.toLowerCase().startsWith(val.toLowerCase()));
+            if (matches.length > 0 && matches[0] !== val) {
+              // Suggestion visuelle possible
+            }
+          }
+        });
+
+        document.getElementById('editForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+
+          u.displayName = document.getElementById('editDisplayName').value.trim();
+          u.oldClasses = document.getElementById('editOldClasses').value.split(',').map(s => s.trim()).filter(Boolean);
+          u.newClasses = document.getElementById('editNewClasses').value.split(',').map(s => s.trim()).filter(Boolean);
+          u.groups = document.getElementById('editGroups').value.split(',').map(s => s.trim()).filter(Boolean);
+
+          u.oldClasses.forEach(c => globalOldClasses.add(c));
+          u.newClasses.forEach(c => globalNewClasses.add(c));
+          u.groups.forEach(g => globalGroups.add(g));
+
+          rebuildDatalist();
+          renderStats();
+          renderClassFilters();
+          applyFilters();
+          openModal(u.id, false);
+        });
+
+        document.getElementById('cancelEditBtn').addEventListener('click', () => openModal(u.id, false));
+
+      } else {
+        document.getElementById('modal').innerHTML = `
+          <div class="modal-header">
+            <div class="avatar ${u.type}">${initials(u.displayName)}</div>
+            <div>
+              <h2 style="font-size:1.2rem;font-weight:600">${escapeHtml(u.displayName)}</h2>
+              <span class="badge ${u.type}">${TYPE_LABELS[u.type] || u.type}</span>
+            </div>
+            <button class="btn-action btn-primary" id="editProfileBtn" style="margin-left:auto">✏️ Éditer</button>
+            <button class="modal-close" id="modalClose">×</button>
+          </div>
+          <div class="modal-body">
+            ${u.motto ? `<div class="motto">« ${escapeHtml(u.motto)} »</div>` : ''}
+
+            <div class="detail-section">
+              <h4>Classes & Groupes</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <div class="label">Nouvelle(s) classe(s)</div>
+                  <div class="value">${u.newClasses.length ? u.newClasses.map(c => `<span class="tag new-class">${escapeHtml(c)}</span>`).join(' ') : '—'}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="label">Ancienne(s) classe(s)</div>
+                  <div class="value">${u.oldClasses.length ? u.oldClasses.map(c => `<span class="tag class">${escapeHtml(c)}</span>`).join(' ') : '—'}</div>
+                </div>
+              </div>
+              ${u.groups.length ? `
+                <div style="margin-top:8px">
+                  <div class="label" style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Groupes</div>
+                  <div class="tags-wrap">${u.groups.map(g => `<span class="tag group">${escapeHtml(g)}</span>`).join('')}</div>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="detail-section">
+              <h4>Identité</h4>
+              <div class="detail-grid">
+                <div class="detail-item"><div class="label">Login</div><div class="value">${escapeHtml(u.login || '—')}</div></div>
+                <div class="detail-item"><div class="label">Alias</div><div class="value">${escapeHtml(u.loginAlias || '—')}</div></div>
+                <div class="detail-item"><div class="label">ID externe</div><div class="value">${escapeHtml(u.externalId || '—')}</div></div>
+                <div class="detail-item"><div class="label">UUID</div><div class="value" style="font-size:.72rem">${escapeHtml(u.id)}</div></div>
+              </div>
+            </div>
+
+            ${(u.subjects || []).length ? `
+            <div class="detail-section">
+              <h4>Matières enseignées</h4>
+              <div class="tags-wrap">${u.subjects.map(s => `<span class="tag">${escapeHtml(s)}</span>`).join('')}</div>
+            </div>` : ''}
+
+            ${(u.relations || []).length ? `
+            <div class="detail-section">
+              <h4>Relations familiales / liens</h4>
+              ${u.relations.map(r => `
+                <div class="relation-link" data-id="${r.id}">
+                  <div class="avatar ${r.typeKnown || 'Relative'}" style="width:32px;height:32px;font-size:.7rem;border-radius:8px">${initials(r.name)}</div>
+                  <div>
+                    <div style="font-weight:500;font-size:.88rem">${escapeHtml(r.name)}</div>
+                    <div style="font-size:.75rem;color:var(--muted)">${r.typeKnown ? TYPE_LABELS[r.typeKnown] || r.typeKnown : 'Lien'}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>` : ''}
+
+            <div class="detail-section">
+              <h4>Établissement</h4>
+              <div class="detail-grid">
+                <div class="detail-item"><div class="label">Nom</div><div class="value">${escapeHtml(school.name || '—')}</div></div>
+                <div class="detail-item"><div class="label">UAI</div><div class="value">${escapeHtml(school.UAI || '—')}</div></div>
+                <div class="detail-item"><div class="label">Ville</div><div class="value">${escapeHtml(school.city || '—')}</div></div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('editProfileBtn').addEventListener('click', () => openModal(u.id, true));
+      }
+
+      document.getElementById('overlay').classList.add('open');
+      document.getElementById('modalClose').addEventListener('click', closeModal);
+      document.querySelectorAll('.relation-link').forEach(el => {
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          openModal(el.dataset.id);
+        });
+      });
+    }
+
+    function closeModal() {
+      document.getElementById('overlay').classList.remove('open');
+    }
+
+    // Gestion Import / Export JSON
+    document.getElementById('importJsonBtn').addEventListener('click', () => {
+      document.getElementById('jsonFileInput').click();
+    });
+
+    document.getElementById('jsonFileInput').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
-          dbRawData = JSON.parse(event.target.result);
-          // Extraction du tableau users qu'il soit à la racine ou dans l'objet principal
-          users = Array.isArray(dbRawData) ? dbRawData : (dbRawData.users || []);
-          
-          if (!users.length) {
-            alert("Aucun utilisateur n'a été trouvé dans le fichier.");
-            return;
-          }
-
-          initGroupsFromUsers();
-          populateClassFilter();
-          renderPeopleList();
-          renderGroupSelect();
-          exportBtn.disabled = false;
+          const parsed = JSON.parse(event.target.result);
+          processLoadedData(parsed);
         } catch (err) {
-          alert("Erreur lors de la lecture du fichier JSON. Vérifiez la syntaxe.");
+          alert('Erreur de lecture du fichier JSON : ' + err.message);
         }
       };
       reader.readAsText(file);
     });
 
-    // Remplit la structure des groupes à partir des attributs 'groups' existants
-    function initGroupsFromUsers() {
-      groups = {};
-      users.forEach(u => {
-        if (!u.groups) u.groups = [];
-        u.groups.forEach(gName => {
-          if (!groups[gName]) groups[gName] = [];
-          if (!groups[gName].includes(u.id)) groups[gName].push(u.id);
-        });
-      });
-    }
-
-    // Filtres
-    function populateClassFilter() {
-      const classes = new Set();
-      users.forEach(u => (u.classes || []).forEach(c => classes.add(c)));
-      classFilter.innerHTML = '<option value="">Toutes les classes</option>';
-      Array.from(classes).sort().forEach(c => {
-        classFilter.innerHTML += `<option value="${c}">${c}</option>`;
-      });
-    }
-
-    searchInput.addEventListener('input', renderPeopleList);
-    classFilter.addEventListener('change', renderPeopleList);
-    typeFilter.addEventListener('change', renderPeopleList);
-
-    function renderPeopleList() {
-      const query = searchInput.value.toLowerCase();
-      const selectedClass = classFilter.value;
-      const selectedType = typeFilter.value;
-
-      const filtered = users.filter(u => {
-        const matchName = u.displayName.toLowerCase().includes(query) || u.login.toLowerCase().includes(query);
-        const matchClass = !selectedClass || (u.classes && u.classes.includes(selectedClass));
-        const matchType = !selectedType || u.type === selectedType;
-        return matchName && matchClass && matchType;
-      });
-
-      if (!filtered.length) {
-        peopleList.innerHTML = '<p class="text-slate-400 text-sm text-center mt-5">Aucun résultat.</p>';
-        return;
-      }
-
-      peopleList.innerHTML = filtered.map(u => {
-        const isAssignedToActive = activeGroupName && groups[activeGroupName] && groups[activeGroupName].includes(u.id);
-        const userClasses = (u.classes || []).join(', ') || 'N/A';
-        
-        return `
-          <div class="flex items-center justify-between p-2 border rounded-lg hover:bg-slate-50 text-sm">
-            <div>
-              <p class="font-medium text-slate-800">${u.displayName}</p>
-              <p class="text-xs text-slate-500">${u.type} — Classe : ${userClasses}</p>
-            </div>
-            ${activeGroupName ? `
-              <button onclick="toggleAssign('${u.id}')" class="px-3 py-1 rounded text-xs font-semibold transition ${isAssignedToActive ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}">
-                ${isAssignedToActive ? 'Retirer' : 'Ajouter'}
-              </button>
-            ` : ''}
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Gestion des Groupes
-    createGroupBtn.addEventListener('click', () => {
-      const name = newGroupName.value.trim();
-      if (!name) return;
-      if (groups[name]) {
-        alert("Ce groupe existe déjà.");
-        return;
-      }
-      groups[name] = [];
-      newGroupName.value = '';
-      renderGroupSelect(name);
+    document.getElementById('exportJsonBtn').addEventListener('click', () => {
+      if (!DATA) return;
+      const jsonString = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(DATA, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", jsonString);
+      downloadAnchor.setAttribute("download", "annuaire_data_mise_a_jour.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
     });
 
-    function renderGroupSelect(selectGroup = activeGroupName) {
-      groupSelect.innerHTML = '<option value="">-- Aucun groupe --</option>';
-      Object.keys(groups).sort().forEach(g => {
-        groupSelect.innerHTML += `<option value="${g}" ${g === selectGroup ? 'selected' : ''}>${g} (${groups[g].length})</option>`;
+    // Événements Filtres
+    document.getElementById('searchInput').addEventListener('input', e => {
+      state.search = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('oldClassFilter').addEventListener('change', e => {
+      state.oldClassName = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('newClassFilter').addEventListener('change', e => {
+      state.newClassName = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('subjectFilter').addEventListener('change', e => {
+      state.subject = e.target.value;
+      applyFilters();
+    });
+
+    ['relationsOnly', 'teachersOnly', 'federatedOnly'].forEach(id => {
+      document.getElementById(id).addEventListener('change', e => {
+        state[id] = e.target.checked;
+        applyFilters();
       });
-      selectGroupHandler(selectGroup);
-    }
-
-    groupSelect.addEventListener('change', (e) => selectGroupHandler(e.target.value));
-
-    function selectGroupHandler(gName) {
-      activeGroupName = gName || null;
-      if (!activeGroupName) {
-        activeGroupNameEl.textContent = "Aucun groupe sélectionné";
-        groupMembersList.innerHTML = '<p class="text-slate-400 text-sm text-center mt-10">Sélectionnez un groupe pour voir ses membres.</p>';
-        memberCount.textContent = '0';
-        deleteGroupBtn.classList.add('hidden');
-      } else {
-        activeGroupNameEl.textContent = activeGroupName;
-        deleteGroupBtn.classList.remove('hidden');
-        renderActiveGroupMembers();
-      }
-      renderPeopleList();
-    }
-
-    function renderActiveGroupMembers() {
-      const memberIds = groups[activeGroupName] || [];
-      memberCount.textContent = memberIds.length;
-
-      if (!memberIds.length) {
-        groupMembersList.innerHTML = '<p class="text-slate-400 text-sm text-center mt-10">Aucun membre dans ce groupe.</p>';
-        return;
-      }
-
-      const assignedUsers = users.filter(u => memberIds.includes(u.id));
-      groupMembersList.innerHTML = assignedUsers.map(u => `
-        <div class="flex items-center justify-between p-2 border-b last:border-b-0 text-sm">
-          <div>
-            <span class="font-medium text-slate-800">${u.displayName}</span>
-            <span class="text-xs text-slate-400 ml-2">(${u.type})</span>
-          </div>
-          <button onclick="toggleAssign('${u.id}')" class="text-red-500 hover:text-red-700 text-xs font-semibold">
-            Retirer
-          </button>
-        </div>
-      `).join('');
-    }
-
-    // Ajout/Suppression d'un utilisateur au groupe actif
-    window.toggleAssign = function(userId) {
-      if (!activeGroupName) return;
-
-      const groupMembers = groups[activeGroupName];
-      const index = groupMembers.indexOf(userId);
-
-      const user = users.find(u => u.id === userId);
-      if (index === -1) {
-        groupMembers.push(userId);
-        if (!user.groups.includes(activeGroupName)) user.groups.push(activeGroupName);
-      } else {
-        groupMembers.splice(index, 1);
-        user.groups = user.groups.filter(g => g !== activeGroupName);
-      }
-
-      user.groupsCount = user.groups.length;
-      renderGroupSelect(activeGroupName);
-    };
-
-    deleteGroupBtn.addEventListener('click', () => {
-      if (!activeGroupName) return;
-      if (confirm(`Voulez-vous supprimer le groupe "${activeGroupName}" ?`)) {
-        users.forEach(u => {
-          u.groups = (u.groups || []).filter(g => g !== activeGroupName);
-          u.groupsCount = u.groups.length;
-        });
-        delete groups[activeGroupName];
-        renderGroupSelect(null);
-      }
     });
 
-    // Exporter le fichier JSON
-    exportBtn.addEventListener('click', () => {
-      let exportData;
-      if (Array.isArray(dbRawData)) {
-        exportData = users;
-      } else {
-        exportData = { ...dbRawData, users };
-      }
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'annuaire_groupes_maj.json';
-      a.click();
-      URL.revokeObjectURL(url);
+    document.querySelectorAll('.view-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        state.view = tab.dataset.view;
+        applyFilters();
+      });
     });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      state = { search: '', types: new Set(), oldClassName: '', newClassName: '', subject: '', relationsOnly: false, teachersOnly: false, federatedOnly: false, view: state.view };
+      document.getElementById('searchInput').value = '';
+      document.getElementById('oldClassFilter').value = '';
+      document.getElementById('newClassFilter').value = '';
+      document.getElementById('subjectFilter').value = '';
+      document.querySelectorAll('#relationsOnly,#teachersOnly,#federatedOnly').forEach(c => c.checked = false);
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      applyFilters();
+    });
+
+    document.getElementById('overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('overlay')) closeModal();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    loadData();
   </script>
 </body>
 </html>
