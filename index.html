@@ -673,6 +673,13 @@
         </div>
 
         <div class="filter-section">
+          <div class="filter-label">Spécialités</div>
+          <select class="filter-select" id="specialtyFilter">
+            <option value="">Toutes les spécialités</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
           <div class="filter-label">Matière (enseignants)</div>
           <select class="filter-select" id="subjectFilter">
             <option value="">Toutes les matières</option>
@@ -725,8 +732,6 @@
     let globalOldClasses = new Set();
     let globalNewClasses = new Set();
     let globalGroups = new Set();
-    
-    // Spécialités par défaut proposées dans l'autocomplétion
     let globalSpecialties = new Set([
       'Mathématiques', 'Physique-Chimie', 'SVT', 'NSI', 'SI',
       'HGGSP', 'SES', 'HLP', 'LLCER Anglais', 'LLCER Espagnol', 'Arts'
@@ -738,6 +743,7 @@
       oldClassName: '',
       newClassName: '',
       groupName: '',
+      specialtyName: '',
       subject: '',
       relationsOnly: false,
       teachersOnly: false,
@@ -763,7 +769,6 @@
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    // Générer un ID unique pour un nouveau profil
     function generateId() {
       return 'user_' + Math.random().toString(36).substr(2, 9);
     }
@@ -795,9 +800,9 @@
       globalOldClasses.clear();
       globalNewClasses.clear();
       globalGroups.clear();
+      globalSpecialties.clear();
 
       USERS.forEach(u => {
-        // Initialiser les tableaux manquants pour éviter les bugs
         u.oldClasses = u.oldClasses || u.classes || [];
         u.newClasses = u.newClasses || [];
         u.groups = u.groups || [];
@@ -821,12 +826,12 @@
       renderStats();
       renderTypeChips();
       renderClassFilters();
+      renderSpecialtyFilter();
       renderSubjectFilter();
       applyFilters();
     }
 
     function rebuildDatalists() {
-      // Classes
       const datalistClasses = document.getElementById('classSuggestions');
       datalistClasses.innerHTML = '';
       const allKnownClasses = new Set([...globalOldClasses, ...globalNewClasses]);
@@ -836,7 +841,6 @@
         datalistClasses.appendChild(opt);
       });
 
-      // Spécialités
       const datalistSpecs = document.getElementById('specialtiesSuggestions');
       datalistSpecs.innerHTML = '';
       Array.from(globalSpecialties).sort().forEach(spec => {
@@ -847,7 +851,6 @@
     }
 
     function renderStats() {
-      const s = DATA.stats || {};
       const totalCount = USERS.length;
       const row = document.getElementById('statsRow');
       row.innerHTML = `
@@ -855,6 +858,7 @@
         <div class="stat-pill"><strong>${globalOldClasses.size}</strong> anc. classes</div>
         <div class="stat-pill"><strong>${globalNewClasses.size}</strong> nouv. classes</div>
         <div class="stat-pill"><strong>${globalGroups.size}</strong> groupes</div>
+        <div class="stat-pill"><strong>${globalSpecialties.size}</strong> spécialités</div>
       `;
     }
 
@@ -898,6 +902,15 @@
       });
     }
 
+    function renderSpecialtyFilter() {
+      const specSel = document.getElementById('specialtyFilter');
+      specSel.innerHTML = '<option value="">Toutes les spécialités</option>';
+      Array.from(globalSpecialties).sort().forEach(s => {
+        const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
+        specSel.appendChild(opt);
+      });
+    }
+
     function renderSubjectFilter() {
       const sel = document.getElementById('subjectFilter');
       sel.innerHTML = '<option value="">Toutes les matières</option>';
@@ -918,6 +931,7 @@
         if (state.oldClassName && !u.oldClasses.includes(state.oldClassName)) return false;
         if (state.newClassName && !u.newClasses.includes(state.newClassName)) return false;
         if (state.groupName && !u.groups.includes(state.groupName)) return false;
+        if (state.specialtyName && !u.specialties.includes(state.specialtyName)) return false;
         if (state.subject && !(u.subjects || []).includes(state.subject)) return false;
         if (state.relationsOnly && !(u.relations && u.relations.length)) return false;
         if (state.teachersOnly && u.type !== 'Teacher') return false;
@@ -935,7 +949,6 @@
     }
 
     function renderCard(u, i) {
-      const relCount = (u.relations || []).length;
       return `
         <article class="card" data-id="${u.id}" style="animation-delay:${Math.min(i * 15, 300)}ms">
           <div class="card-top">
@@ -1028,7 +1041,6 @@
       });
     }
 
-    // Modal de Création
     function openCreateModal() {
       document.getElementById('modal').innerHTML = `
         <div class="modal-header">
@@ -1083,7 +1095,6 @@
           edt: ''
         };
 
-        // Ajout au système global
         USERS.push(newUser);
         USER_MAP[newId] = newUser;
         if (!DATA) DATA = { users: [] };
@@ -1091,18 +1102,13 @@
 
         renderStats();
         applyFilters();
-        
-        // Ouvrir directement la fenêtre d'édition complète
         openModal(newId, true);
       });
     }
 
-    // Modal Visualisation et Édition
     function openModal(id, isEditing = false) {
       const u = USER_MAP[id];
       if (!u) return;
-
-      const school = u.school || (DATA && DATA.school) || {};
 
       if (isEditing) {
         document.getElementById('modal').innerHTML = `
@@ -1132,7 +1138,7 @@
               </div>
 
               <div class="form-group">
-                <label>Groupes (séparés par des virgules) <br><i style="font-size:.7rem;color:var(--muted)">Conseil : ajoutez le nom de la classe, ex: "1G2 - Pro B" pour ne pas les mélanger.</i></label>
+                <label>Groupes (séparés par des virgules) <br><i style="font-size:.7rem;color:var(--muted)">Conseil : ajoutez le nom de la classe, ex: "1G2 - Pro B".</i></label>
                 <input type="text" class="form-control" id="editGroups" value="${escapeHtml(u.groups.join(', '))}" placeholder="Ex: 1G2 - Pro B, 1G2 - Anglais LVA">
               </div>
               
@@ -1142,8 +1148,14 @@
               </div>
 
               <div class="form-group">
-                <label>Lien vers l'Emploi du temps (Texte, lien Pronote, etc.)</label>
-                <input type="text" class="form-control" id="editEdt" value="${escapeHtml(u.edt || '')}" placeholder="Ex: Lundi 8h, ou lien http://...">
+                <label>Emploi du temps (Texte / Lien)</label>
+                <input type="text" class="form-control" id="editEdtText" value="${escapeHtml(u.edt && !u.edt.startsWith('data:image') ? u.edt : '')}" placeholder="Ex: Lundi 8h ou lien...">
+              </div>
+
+              <div class="form-group">
+                <label>Ou importer une image d'Emploi du temps (pour toute la classe)</label>
+                <input type="file" class="form-control" id="editEdtImage" accept="image/*">
+                ${u.edt && u.edt.startsWith('data:image') ? `<div style="font-size:.75rem;color:var(--student);margin-top:4px">✓ Image actuelle enregistrée</div>` : ''}
               </div>
 
               <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
@@ -1157,28 +1169,81 @@
         document.getElementById('editForm').addEventListener('submit', (e) => {
           e.preventDefault();
 
-          u.displayName = document.getElementById('editDisplayName').value.trim();
-          u.oldClasses = document.getElementById('editOldClasses').value.split(',').map(s => s.trim()).filter(Boolean);
-          u.newClasses = document.getElementById('editNewClasses').value.split(',').map(s => s.trim()).filter(Boolean);
-          u.groups = document.getElementById('editGroups').value.split(',').map(s => s.trim()).filter(Boolean);
-          u.specialties = document.getElementById('editSpecialties').value.split(',').map(s => s.trim()).filter(Boolean);
-          u.edt = document.getElementById('editEdt').value.trim();
+          const newClassesInput = document.getElementById('editNewClasses').value.split(',').map(s => s.trim()).filter(Boolean);
+          const oldClassesInput = document.getElementById('editOldClasses').value.split(',').map(s => s.trim()).filter(Boolean);
+          const groupsInput = document.getElementById('editGroups').value.split(',').map(s => s.trim()).filter(Boolean);
+          const specialtiesInput = document.getElementById('editSpecialties').value.split(',').map(s => s.trim()).filter(Boolean);
+          const textEdt = document.getElementById('editEdtText').value.trim();
+          const imageFile = document.getElementById('editEdtImage').files[0];
 
-          u.oldClasses.forEach(c => globalOldClasses.add(c));
-          u.newClasses.forEach(c => globalNewClasses.add(c));
-          u.groups.forEach(g => globalGroups.add(g));
-          u.specialties.forEach(s => globalSpecialties.add(s));
+          const saveChanges = (edtValue) => {
+            u.displayName = document.getElementById('editDisplayName').value.trim();
+            u.oldClasses = oldClassesInput;
+            u.newClasses = newClassesInput;
+            u.groups = groupsInput;
+            u.specialties = specialtiesInput;
+            u.edt = edtValue;
 
-          rebuildDatalists();
-          renderStats();
-          renderClassFilters();
-          applyFilters();
-          openModal(u.id, false);
+            // PROPAGATION DE L'EMPLOI DU TEMPS A TOUTE LA CLASSE
+            if (edtValue && u.newClasses.length > 0) {
+              const targetClass = u.newClasses[0];
+              USERS.forEach(otherUser => {
+                if (otherUser.newClasses && otherUser.newClasses.includes(targetClass)) {
+                  otherUser.edt = edtValue;
+                }
+              });
+            }
+
+            u.oldClasses.forEach(c => globalOldClasses.add(c));
+            u.newClasses.forEach(c => globalNewClasses.add(c));
+            u.groups.forEach(g => globalGroups.add(g));
+            u.specialties.forEach(s => globalSpecialties.add(s));
+
+            rebuildDatalists();
+            renderStats();
+            renderClassFilters();
+            renderSpecialtyFilter();
+            applyFilters();
+            openModal(u.id, false);
+          };
+
+          if (imageFile) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              saveChanges(event.target.result); // Base64 de l'image
+            };
+            reader.readAsDataURL(imageFile);
+          } else {
+            saveChanges(textEdt || u.edt);
+          }
         });
 
         document.getElementById('cancelEditBtn').addEventListener('click', () => openModal(u.id, false));
 
       } else {
+        let edtDisplayHtml = '';
+        if (u.edt) {
+          if (u.edt.startsWith('data:image')) {
+            edtDisplayHtml = `
+              <div class="motto" style="border-left-color:var(--accent); margin-bottom: 15px;">
+                <strong>🕒 Emploi du temps (Image) :</strong><br>
+                <img src="${u.edt}" alt="Emploi du temps" style="max-width:100%; border-radius:8px; margin-top:8px;">
+              </div>`;
+          } else if (u.edt.startsWith('http')) {
+            edtDisplayHtml = `
+              <div class="motto" style="border-left-color:var(--accent); margin-bottom: 15px;">
+                <strong>🕒 Emploi du temps :</strong><br>
+                <a href="${escapeHtml(u.edt)}" target="_blank" style="color:var(--accent)">Voir le lien d'emploi du temps ↗</a>
+              </div>`;
+          } else {
+            edtDisplayHtml = `
+              <div class="motto" style="border-left-color:var(--accent); margin-bottom: 15px;">
+                <strong>🕒 Emploi du temps :</strong><br>
+                ${escapeHtml(u.edt)}
+              </div>`;
+          }
+        }
+
         document.getElementById('modal').innerHTML = `
           <div class="modal-header">
             <div class="avatar ${u.type}">${initials(u.displayName)}</div>
@@ -1191,13 +1256,7 @@
           </div>
           <div class="modal-body">
             ${u.motto ? `<div class="motto">« ${escapeHtml(u.motto)} »</div>` : ''}
-            
-            ${u.edt ? `
-              <div class="motto" style="border-left-color:var(--accent); margin-bottom: 15px;">
-                <strong>🕒 Emploi du temps :</strong><br>
-                ${u.edt.startsWith('http') ? `<a href="${escapeHtml(u.edt)}" target="_blank" style="color:var(--accent)">Voir le lien d'emploi du temps ↗</a>` : escapeHtml(u.edt)}
-              </div>
-            ` : ''}
+            ${edtDisplayHtml}
 
             <div class="detail-section">
               <h4>Classes, Groupes & Spécialités</h4>
@@ -1235,26 +1294,6 @@
                 <div class="detail-item"><div class="label">UUID</div><div class="value" style="font-size:.72rem">${escapeHtml(u.id)}</div></div>
               </div>
             </div>
-
-            ${(u.subjects || []).length ? `
-            <div class="detail-section">
-              <h4>Matières enseignées</h4>
-              <div class="tags-wrap">${u.subjects.map(s => `<span class="tag">${escapeHtml(s)}</span>`).join('')}</div>
-            </div>` : ''}
-
-            ${(u.relations || []).length ? `
-            <div class="detail-section">
-              <h4>Relations familiales / liens</h4>
-              ${u.relations.map(r => `
-                <div class="relation-link" data-id="${r.id}">
-                  <div class="avatar ${r.typeKnown || 'Relative'}" style="width:32px;height:32px;font-size:.7rem;border-radius:8px">${initials(r.name)}</div>
-                  <div>
-                    <div style="font-weight:500;font-size:.88rem">${escapeHtml(r.name)}</div>
-                    <div style="font-size:.75rem;color:var(--muted)">${r.typeKnown ? TYPE_LABELS[r.typeKnown] || r.typeKnown : 'Lien'}</div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>` : ''}
           </div>
         `;
 
@@ -1263,19 +1302,12 @@
 
       document.getElementById('overlay').classList.add('open');
       document.getElementById('modalClose').addEventListener('click', closeModal);
-      document.querySelectorAll('.relation-link').forEach(el => {
-        el.addEventListener('click', e => {
-          e.stopPropagation();
-          openModal(el.dataset.id);
-        });
-      });
     }
 
     function closeModal() {
       document.getElementById('overlay').classList.remove('open');
     }
 
-    // Gestion Import / Export JSON
     document.getElementById('createProfileBtn').addEventListener('click', openCreateModal);
 
     document.getElementById('importJsonBtn').addEventListener('click', () => {
@@ -1285,7 +1317,6 @@
     document.getElementById('jsonFileInput').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
@@ -1309,7 +1340,6 @@
       downloadAnchor.remove();
     });
 
-    // Événements Filtres
     document.getElementById('searchInput').addEventListener('input', e => {
       state.search = e.target.value;
       applyFilters();
@@ -1327,6 +1357,11 @@
     
     document.getElementById('groupFilter').addEventListener('change', e => {
       state.groupName = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('specialtyFilter').addEventListener('change', e => {
+      state.specialtyName = e.target.value;
       applyFilters();
     });
 
@@ -1352,11 +1387,12 @@
     });
 
     document.getElementById('resetBtn').addEventListener('click', () => {
-      state = { search: '', types: new Set(), oldClassName: '', newClassName: '', groupName: '', subject: '', relationsOnly: false, teachersOnly: false, federatedOnly: false, view: state.view };
+      state = { search: '', types: new Set(), oldClassName: '', newClassName: '', groupName: '', specialtyName: '', subject: '', relationsOnly: false, teachersOnly: false, federatedOnly: false, view: state.view };
       document.getElementById('searchInput').value = '';
       document.getElementById('oldClassFilter').value = '';
       document.getElementById('newClassFilter').value = '';
       document.getElementById('groupFilter').value = '';
+      document.getElementById('specialtyFilter').value = '';
       document.getElementById('subjectFilter').value = '';
       document.querySelectorAll('#relationsOnly,#teachersOnly,#federatedOnly').forEach(c => c.checked = false);
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
