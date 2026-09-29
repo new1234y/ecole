@@ -2,453 +2,526 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lycée CRM & Social Graph</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lycée CRM - Smart Edition</title>
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338CA;
-            --bg-main: #F3F4F6;
-            --bg-card: #FFFFFF;
-            --text-main: #1F2937;
-            --text-muted: #6B7280;
-            --border: #E5E7EB;
+            --primary: #3b82f6; --primary-hover: #2563eb;
+            --bg-main: #f8fafc; --bg-card: #ffffff;
+            --text-main: #0f172a; --text-muted: #64748b;
+            --border: #e2e8f0; --danger: #ef4444;
+            --label-bg: #e0f2fe; --label-text: #0369a1;
         }
 
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
         
-        body {
-            margin: 0; padding: 0;
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            display: flex; height: 100vh; overflow: hidden;
-        }
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar - Liste et Filtres */
-        .sidebar {
-            width: 350px; background: var(--bg-card); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column;
-        }
-        
-        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
-        .sidebar-header h1 { margin: 0 0 15px 0; font-size: 1.2rem; color: var(--primary); }
-        
-        .filters input, .filters select {
-            width: 100%; padding: 8px; margin-bottom: 10px;
-            border: 1px solid var(--border); border-radius: 6px;
-        }
-
-        .btn {
-            background: var(--primary); color: white; border: none;
-            padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 5px;
-        }
+        /* UTILITAIRES */
+        .btn { background: var(--primary); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
         .btn:hover { background: var(--primary-hover); }
-        .btn-secondary { background: var(--text-muted); }
+        .btn-outline { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-outline:hover { background: var(--bg-main); }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: var(--bg-main); outline: none; transition: 0.2s; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; }
 
-        .person-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .person-card {
-            padding: 10px; border: 1px solid var(--border); border-radius: 6px;
-            margin-bottom: 10px; cursor: pointer; transition: 0.2s;
-        }
-        .person-card:hover { border-color: var(--primary); background: #EEF2FF; }
-        .person-name { font-weight: bold; }
-        .person-meta { font-size: 0.85rem; color: var(--text-muted); }
-        .badge {
-            background: #E0E7FF; color: var(--primary); padding: 2px 6px;
-            border-radius: 12px; font-size: 0.75rem; margin-right: 5px;
-        }
-
-        /* Main Content - Profil */
-        .main-content {
-            flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column;
-        }
+        /* LAYOUT PRINCIPAL */
+        .sidebar { width: 380px; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; }
+        .main-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 20px; position: relative; }
         
-        .profile-container {
-            background: var(--bg-card); border-radius: 8px; padding: 25px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; width: 100%;
-            display: none;
-        }
-
-        .profile-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;}
+        /* SIDEBAR (Recherche) */
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); background: var(--bg-card); z-index: 10;}
+        .sidebar-header h1 { font-size: 1.4rem; color: var(--primary); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .search-box { position: relative; margin-bottom: 10px; }
+        .search-box input { padding-left: 35px; background: white; }
+        .search-icon { position: absolute; left: 10px; top: 10px; opacity: 0.5; }
+        .filters-row { display: flex; gap: 10px; margin-bottom: 15px; }
         
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: var(--text-muted); }
-        .form-group input, .form-group textarea, .form-group select {
-            padding: 8px; border: 1px solid var(--border); border-radius: 6px;
-        }
-        .form-group.full-width { grid-column: span 2; }
-
-        .relations-box, .image-box {
-            background: #F9FAFB; padding: 15px; border-radius: 6px; margin-top: 15px; border: 1px solid var(--border);
-        }
+        .person-list { flex: 1; overflow-y: auto; padding: 15px; }
+        .person-card { padding: 12px 15px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; cursor: pointer; background: white; transition: 0.2s; }
+        .person-card:hover { border-color: var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .person-name { font-weight: 600; font-size: 1.05rem; }
+        .person-details { font-size: 0.85rem; color: var(--text-muted); margin-top: 5px; }
         
-        .img-preview { max-width: 100%; max-height: 300px; margin-top: 10px; border-radius: 6px; display: none; }
+        /* TAGS & LABELS */
+        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .tag { background: var(--label-bg); color: var(--label-text); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; user-select: none; }
+        .tag.inactive { background: var(--bg-main); color: var(--text-muted); border: 1px solid var(--border); }
+        
+        /* PROFIL (Main Content) */
+        .profile-card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; width: 100%; display: none; }
+        .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        
+        /* AUTOCOMPLETE DROPDOWN */
+        .autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 50; max-height: 200px; overflow-y: auto; display: none; }
+        .ac-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid var(--bg-main); }
+        .ac-item:hover { background: var(--label-bg); }
+        .ac-name { font-weight: bold; }
+        .ac-meta { font-size: 0.8rem; color: var(--text-muted); }
 
-        .setup-screen { text-align: center; margin: auto; padding: 40px; background: white; border-radius: 8px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; position: relative; }
+        .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .full-width { grid-column: span 2; }
+        
+        .section-title { font-size: 1rem; color: var(--primary); font-weight: bold; margin: 25px 0 10px 0; border-bottom: 2px solid var(--bg-main); padding-bottom: 5px; grid-column: span 2;}
+
+        /* UPLOAD IMAGE */
+        .img-preview { max-width: 100%; max-height: 250px; border-radius: 8px; margin-top: 10px; display: none; object-fit: contain; background: var(--bg-main); }
+
+        /* RESPONSIVE MOBILE */
+        .mobile-back { display: none; margin-right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; }
+            .main-content { padding: 10px; display: none; }
+            body.view-profile .sidebar { display: none; }
+            body.view-profile .main-content { display: flex; }
+            .mobile-back { display: inline-block; }
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .section-title { grid-column: span 1; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- SIDEBAR -->
+    <!-- SIDEBAR: LISTE & RECHERCHE -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <h1>Lycée CRM</h1>
-            <div class="filters">
-                <input type="text" id="searchInput" placeholder="Rechercher un nom, prénom..." onkeyup="renderList()">
-                <select id="classFilter" onchange="renderList()">
-                    <option value="">Toutes les classes actuelles</option>
+            <h1><span>👥 Lycée CRM</span> 
+                <button class="btn btn-outline" style="padding: 5px 8px; font-size:0.8rem;" onclick="document.getElementById('importJson').click()">📁 Importer</button>
+                <input type="file" id="importJson" accept=".json" style="display:none;" onchange="importData(event)">
+            </h1>
+            
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Rechercher nom, classe (ex: pro), parent..." onkeyup="renderList()">
+            </div>
+            
+            <div class="filters-row">
+                <select id="filterClass" onchange="renderList()">
+                    <option value="">Toutes les classes</option>
                 </select>
-                <select id="labelFilter" onchange="renderList()">
+                <select id="filterLabel" onchange="renderList()">
                     <option value="">Tous les labels</option>
                 </select>
             </div>
-            <button class="btn" onclick="createNewProfile()">+ Nouveau Profil</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('jsonUpload').click()" style="margin-top:5px; font-size: 0.8rem;">🔄 Importer annuaire_data.json</button>
-            <input type="file" id="jsonUpload" accept=".json" style="display: none;" onchange="importJSON(event)">
+            
+            <button class="btn" style="width: 100%;" onclick="createNewProfile()">+ Nouvelle Fiche Élève</button>
         </div>
+        
         <div class="person-list" id="personList">
-            <!-- La liste s'affichera ici -->
+            <!-- Rempli par JS -->
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
+    <!-- MAIN CONTENT: PROFIL -->
     <div class="main-content">
-        <!-- Message de bienvenue -->
-        <div id="welcomeScreen" class="setup-screen">
-            <h2>Bienvenue dans votre CRM Personnel</h2>
-            <p>Sélectionnez un profil à gauche, créez-en un nouveau, ou importez votre fichier de l'année dernière.</p>
+        <div id="welcomeScreen" style="text-align: center; margin: auto; color: var(--text-muted);">
+            <h2>Bienvenue dans votre CRM</h2>
+            <p>Sélectionnez un profil ou créez-en un nouveau.</p>
         </div>
 
-        <!-- Editeur de profil -->
-        <div id="profileView" class="profile-container">
+        <div id="profileView" class="profile-card">
             <div class="profile-header">
-                <h2 id="profileTitle">Édition du Profil</h2>
-                <button class="btn" style="width: auto;" onclick="saveProfile()">💾 Sauvegarder</button>
+                <div style="display: flex; align-items: center;">
+                    <button class="mobile-back" onclick="goBack()">🔙</button>
+                    <h2 id="profileTitle" style="margin: 0;">Nouveau Profil</h2>
+                </div>
+                <button class="btn" id="saveBtn" onclick="saveProfile()">💾 Enregistrer</button>
             </div>
-            
+
             <input type="hidden" id="editId">
             
             <div class="form-grid">
-                <div class="form-group">
-                    <label>Nom Complet (ou Prénom Nom)</label>
-                    <input type="text" id="editName" placeholder="Ex: BUGRA Matheo">
+                <!-- INFOS DE BASE -->
+                <div class="section-title">Informations de base</div>
+                <div class="form-group full-width">
+                    <label>Prénom & Nom</label>
+                    <input type="text" id="editName" placeholder="Ex: BUGRA Matheo" oninput="handleAutocomplete(event)" autocomplete="off">
+                    <div id="autocompleteBox" class="autocomplete-results"></div>
                 </div>
+
                 <div class="form-group">
-                    <label>Origine (Collège/Ancien Lycée)</label>
-                    <input type="text" id="editOrigin" placeholder="Ex: Collège Jean Moulin">
+                    <label>Classe Actuelle</label>
+                    <!-- Le dataliste suggère les classes existantes sans forcer la saisie -->
+                    <input type="text" id="editCurrentClass" list="classSuggestions" placeholder="Ex: 1G2, 1PRO MS">
+                    <datalist id="classSuggestions"></datalist>
                 </div>
+                
                 <div class="form-group">
                     <label>Ancienne Classe (Année dernière)</label>
                     <input type="text" id="editOldClass" placeholder="Ex: 2GT6">
                 </div>
-                <div class="form-group">
-                    <label>Classe Actuelle</label>
-                    <input type="text" id="editCurrentClass" placeholder="Ex: 1G2, 1PRO MS..." onchange="updateFilters()">
-                </div>
-                <div class="form-group">
-                    <label>Groupes / Spécialités (séparés par des virgules)</label>
-                    <input type="text" id="editGroups" placeholder="Spé Maths, Spé Physique, Club Échecs">
-                </div>
-                <div class="form-group">
-                    <label>Labels / Catégories (séparés par des virgules)</label>
-                    <input type="text" id="editLabels" placeholder="Ami, Connaissance, BDE...">
-                </div>
-                <div class="form-group full-width">
-                    <label>Notes & Informations libres</label>
-                    <textarea id="editNotes" rows="3" placeholder="Informations diverses, passions..."></textarea>
-                </div>
-            </div>
 
-            <div class="relations-box">
-                <div class="form-group full-width">
-                    <label>Relations (Parents, Frères/Soeurs, Amis) - Séparés par des virgules</label>
-                    <textarea id="editRelations" rows="2" placeholder="PEREIRA Mélanie (Mère), BUGRA Teddy (Père)"></textarea>
+                <div class="form-group">
+                    <label>Origine (Ancien Lycée/Collège)</label>
+                    <input type="text" id="editOrigin" placeholder="Où était-il avant ?">
                 </div>
-            </div>
 
-            <div class="image-box">
-                <label style="font-weight: bold; font-size: 0.85rem; color: var(--text-muted);">Emploi du temps (ou photo)</label>
-                <input type="file" id="editTimetable" accept="image/*" style="margin-top: 5px; width: 100%;" onchange="handleImageUpload(event)">
-                <img id="timetablePreview" class="img-preview" src="" alt="Aperçu">
-                <input type="hidden" id="editTimetableBase64">
-                <button id="removeImgBtn" style="display:none; margin-top:10px;" onclick="removeImage()">❌ Supprimer l'image</button>
+                <div class="form-group">
+                    <label>Groupes / Spécialités</label>
+                    <input type="text" id="editGroups" placeholder="Spé Maths, Club Info...">
+                </div>
+
+                <!-- LABELS INTELLIGENTS -->
+                <div class="section-title">Labels & Catégories</div>
+                <div class="form-group full-width">
+                    <label>Vos labels (Cliquez pour ajouter/retirer)</label>
+                    <div id="labelsEditor" class="tag-container"></div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="newLabelInput" placeholder="Créer un nouveau label..." onkeypress="if(event.key === 'Enter') createLabel()">
+                        <button class="btn btn-outline" onclick="createLabel()">Ajouter</button>
+                    </div>
+                </div>
+
+                <!-- RELATIONS & NOTES -->
+                <div class="section-title">Relations & Notes</div>
+                <div class="form-group full-width">
+                    <label>Relations (Parents, Frères, Sœurs...)</label>
+                    <textarea id="editRelations" rows="2" placeholder="Ex: PEREIRA Mélanie (Mère)"></textarea>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label>Notes (Passions, détails...)</label>
+                    <textarea id="editNotes" rows="3" placeholder="Tout ce qu'il faut retenir..."></textarea>
+                </div>
+
+                <!-- EMPLOI DU TEMPS -->
+                <div class="section-title">Documents / Emploi du temps</div>
+                <div class="form-group full-width">
+                    <label>Ajouter une photo (Emploi du temps)</label>
+                    <input type="file" id="editImg" accept="image/*" onchange="handleImage(event)">
+                    <img id="imgPreview" class="img-preview">
+                    <input type="hidden" id="editImgBase64">
+                    <button id="removeImgBtn" class="btn btn-outline" style="display:none; margin-top:10px; color: var(--danger); border-color: var(--danger);" onclick="removeImage()">🗑 Supprimer l'image</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 1. GESTION DES DONNÉES (LocalStorage)
+        // 1. BASE DE DONNÉES LOCALE
         let db = {
             persons: [],
-            classes: new Set(),
-            labels: new Set()
+            labels: ["Ami", "Connaissance", "Dans ma classe", "BDE", "Sport"], // Labels par défaut
+            classes: []
         };
+        let currentEditingLabels = new Set(); // Stocke les labels de la personne en cours d'édition
 
-        function loadData() {
-            const saved = localStorage.getItem('lyceeCRM_data');
-            if (saved) {
+        // 2. INITIALISATION
+        window.onload = () => {
+            const saved = localStorage.getItem('crm_lycee_v2');
+            if(saved) {
                 const parsed = JSON.parse(saved);
                 db.persons = parsed.persons || [];
-                extractFilters();
-                renderList();
+                db.labels = parsed.labels || db.labels;
             }
+            extractMetadata();
+            renderList();
+        };
+
+        function saveDB() {
+            localStorage.setItem('crm_lycee_v2', JSON.stringify({ persons: db.persons, labels: db.labels }));
+            extractMetadata();
+            renderList();
         }
 
-        function saveData() {
-            localStorage.setItem('lyceeCRM_data', JSON.stringify({ persons: db.persons }));
-            extractFilters();
-        }
-
-        function extractFilters() {
-            db.classes.clear();
-            db.labels.clear();
+        // Extrait les classes uniques pour les filtres et le Datalist
+        function extractMetadata() {
+            let classesSet = new Set();
             db.persons.forEach(p => {
-                if (p.currentClass) db.classes.add(p.currentClass);
-                if (p.labels) {
-                    p.labels.split(',').forEach(l => {
-                        let cleanLabel = l.trim();
-                        if(cleanLabel) db.labels.add(cleanLabel);
-                    });
-                }
+                if(p.currentClass) classesSet.add(p.currentClass.trim());
+                if(p.oldClass) classesSet.add(p.oldClass.trim());
             });
-            updateSelectOptions('classFilter', db.classes, 'Toutes les classes actuelles');
-            updateSelectOptions('labelFilter', db.labels, 'Tous les labels');
+            db.classes = Array.from(classesSet).sort();
+
+            // Remplir les filtres
+            fillSelect('filterClass', db.classes, 'Toutes les classes');
+            fillSelect('filterLabel', db.labels, 'Tous les labels');
+
+            // Remplir le datalist des suggestions de classes
+            const datalist = document.getElementById('classSuggestions');
+            datalist.innerHTML = "";
+            db.classes.forEach(c => {
+                datalist.innerHTML += `<option value="${c}">`;
+            });
         }
 
-        function updateSelectOptions(elementId, setValues, defaultText) {
-            const select = document.getElementById(elementId);
-            const currentVal = select.value;
+        function fillSelect(id, array, defaultText) {
+            const select = document.getElementById(id);
+            const val = select.value;
             select.innerHTML = `<option value="">${defaultText}</option>`;
-            Array.from(setValues).sort().forEach(val => {
-                select.innerHTML += `<option value="${val}">${val}</option>`;
-            });
-            if (setValues.has(currentVal)) select.value = currentVal;
+            array.forEach(item => select.innerHTML += `<option value="${item}">${item}</option>`);
+            if(array.includes(val)) select.value = val;
         }
 
-        // 2. IMPORT ET DÉDUCTION DES CLASSES
-        function predictNextClass(oldClass) {
-            if (!oldClass) return "";
-            oldClass = oldClass.toUpperCase().trim();
-            
-            // Logique de passage de classe (A adapter selon le lycée)
-            if (oldClass.startsWith('2GT')) return "1G (Générale/Techno à préciser)";
-            if (oldClass.includes('2PRO') || (oldClass.startsWith('2') && (oldClass.includes('MS') || oldClass.includes('AGORA')))) {
-                return oldClass.replace(/2PRO|2/g, '1PRO'); // ex: 2PRO MS -> 1PRO MS
-            }
-            if (oldClass.startsWith('1PRO')) return oldClass.replace('1PRO', 'TPRO');
-            if (oldClass.match(/^1G\d*/)) return oldClass.replace('1G', 'TG');
-            if (oldClass.match(/^1T/)) return oldClass.replace('1T', 'TT'); // STMG, STI2D...
-            
-            return "À définir";
-        }
-
-        function importJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
+        // 3. IMPORTATION DE L'ANNUAIRE
+        function importData(e) {
+            const file = e.target.files[0];
+            if(!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (event) => {
                 try {
-                    const data = JSON.parse(e.target.result);
-                    let importCount = 0;
-
-                    // Supporte un tableau d'objets ou un objet contenant un tableau
+                    const data = JSON.parse(event.target.result);
                     const items = Array.isArray(data) ? data : (data.users || data.data || []);
+                    let count = 0;
 
                     items.forEach(item => {
-                        // Eviter les doublons par ID ou Nom
-                        if (!db.persons.find(p => p.id === item.id || p.name === item.displayName)) {
-                            let oldClassStr = (item.classes && item.classes.length > 0) ? item.classes.join(', ') : "";
-                            let relationsStr = (item.relations && item.relations.length > 0) 
-                                                ? item.relations.map(r => r.name).join(', ') : "";
-
-                            let newPerson = {
+                        // Cherche si la personne existe déjà
+                        if(!db.persons.find(p => p.id === item.id || p.name === item.displayName)) {
+                            let oldClassStr = (item.classes && item.classes.length) ? item.classes.join(', ') : "";
+                            let relationsStr = (item.relations && item.relations.length) ? item.relations.map(r => r.name).join(', ') : "";
+                            
+                            db.persons.push({
                                 id: item.id || crypto.randomUUID(),
                                 name: item.displayName || item.name || "Inconnu",
                                 oldClass: oldClassStr,
-                                currentClass: predictNextClass(oldClassStr),
-                                origin: "",
+                                currentClass: "", // Vide car ce sont des données de l'an dernier
+                                origin: "Annuaire",
                                 groups: "",
-                                labels: "Annuaire 2025",
+                                labels: ["Annuaire"],
                                 notes: "",
                                 relations: relationsStr,
-                                timetableImg: ""
-                            };
-                            db.persons.push(newPerson);
-                            importCount++;
+                                image: ""
+                            });
+                            count++;
                         }
                     });
-
-                    saveData();
-                    renderList();
-                    alert(`${importCount} profils importés avec succès !`);
-                } catch (error) {
-                    alert("Erreur lors de la lecture du fichier JSON : " + error);
+                    if(!db.labels.includes("Annuaire")) db.labels.push("Annuaire");
+                    saveDB();
+                    alert(`${count} profils importés avec succès !`);
+                } catch (err) {
+                    alert("Erreur JSON : " + err);
                 }
             };
             reader.readAsText(file);
-            event.target.value = ""; // reset
         }
 
-        // 3. UI: LISTE ET FILTRES
+        // 4. MOTEUR DE RECHERCHE ET LISTE
         function renderList() {
-            const listDiv = document.getElementById('personList');
+            const list = document.getElementById('personList');
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const classFilter = document.getElementById('classFilter').value;
-            const labelFilter = document.getElementById('labelFilter').value;
+            const classFilter = document.getElementById('filterClass').value;
+            const labelFilter = document.getElementById('filterLabel').value;
 
-            listDiv.innerHTML = "";
+            list.innerHTML = "";
 
             let filtered = db.persons.filter(p => {
-                let matchSearch = p.name.toLowerCase().includes(search) || 
-                                  (p.notes && p.notes.toLowerCase().includes(search));
-                let matchClass = classFilter ? p.currentClass === classFilter : true;
-                let matchLabel = labelFilter ? (p.labels && p.labels.includes(labelFilter)) : true;
+                // Recherche Globale Avancée (Nom, Classes, Relations, Notes)
+                let matchSearch = search === "" || 
+                    (p.name && p.name.toLowerCase().includes(search)) ||
+                    (p.oldClass && p.oldClass.toLowerCase().includes(search)) ||
+                    (p.currentClass && p.currentClass.toLowerCase().includes(search)) ||
+                    (p.relations && p.relations.toLowerCase().includes(search)) ||
+                    (p.notes && p.notes.toLowerCase().includes(search));
+                
+                let matchClass = classFilter === "" || p.currentClass === classFilter || p.oldClass === classFilter;
+                let matchLabel = labelFilter === "" || (p.labels && p.labels.includes(labelFilter));
+
                 return matchSearch && matchClass && matchLabel;
             });
 
-            // Tri par nom
-            filtered.sort((a, b) => a.name.localeCompare(b.name));
+            filtered.sort((a,b) => a.name.localeCompare(b.name));
 
             filtered.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'person-card';
-                card.onclick = () => showProfile(p.id);
+                card.onclick = () => openProfile(p.id);
                 
-                let labelsHtml = "";
-                if(p.currentClass) labelsHtml += `<span class="badge">${p.currentClass}</span>`;
-                if(p.labels) {
-                    p.labels.split(',').slice(0,2).forEach(l => {
-                        let clean = l.trim();
-                        if(clean) labelsHtml += `<span class="badge" style="background:#F3F4F6; color:var(--text-muted);">${clean}</span>`;
-                    });
-                }
-
+                let classTag = p.currentClass ? `<span class="tag">${p.currentClass}</span>` : 
+                               (p.oldClass ? `<span class="tag inactive">Ex: ${p.oldClass}</span>` : '');
+                
                 card.innerHTML = `
                     <div class="person-name">${p.name}</div>
-                    <div class="person-meta" style="margin-top:5px;">${labelsHtml}</div>
+                    <div class="tag-container">${classTag}</div>
                 `;
-                listDiv.appendChild(card);
+                list.appendChild(card);
             });
         }
 
-        // 4. UI: PROFIL (CRUD)
+        // 5. GESTION DU PROFIL ET DE L'AUTO-COMPLÉTION
         function createNewProfile() {
-            document.getElementById('welcomeScreen').style.display = 'none';
-            document.getElementById('profileView').style.display = 'block';
-            document.getElementById('profileTitle').innerText = "Nouveau Profil";
-            
+            showProfileScreen();
+            document.getElementById('profileTitle').innerText = "Nouvelle Personne";
             document.getElementById('editId').value = crypto.randomUUID();
-            document.getElementById('editName').value = "";
-            document.getElementById('editOrigin').value = "";
-            document.getElementById('editOldClass').value = "";
-            document.getElementById('editCurrentClass').value = "";
-            document.getElementById('editGroups').value = "";
-            document.getElementById('editLabels').value = "";
-            document.getElementById('editNotes').value = "";
-            document.getElementById('editRelations').value = "";
-            
-            removeImage(); // Réinitialise l'image
+            clearForm();
         }
 
-        function showProfile(id) {
-            const person = db.persons.find(p => p.id === id);
-            if (!person) return;
+        function openProfile(id) {
+            const p = db.persons.find(x => x.id === id);
+            if(!p) return;
+            
+            showProfileScreen();
+            document.getElementById('profileTitle').innerText = p.name;
+            document.getElementById('editId').value = p.id;
+            
+            document.getElementById('editName').value = p.name || "";
+            document.getElementById('editCurrentClass').value = p.currentClass || "";
+            document.getElementById('editOldClass').value = p.oldClass || "";
+            document.getElementById('editOrigin').value = p.origin || "";
+            document.getElementById('editGroups').value = p.groups || "";
+            document.getElementById('editRelations').value = p.relations || "";
+            document.getElementById('editNotes').value = p.notes || "";
+            
+            // Labels
+            currentEditingLabels = new Set(p.labels || []);
+            renderLabelsEditor();
 
-            document.getElementById('welcomeScreen').style.display = 'none';
-            document.getElementById('profileView').style.display = 'block';
-            document.getElementById('profileTitle').innerText = person.name;
-
-            document.getElementById('editId').value = person.id;
-            document.getElementById('editName').value = person.name || "";
-            document.getElementById('editOrigin').value = person.origin || "";
-            document.getElementById('editOldClass').value = person.oldClass || "";
-            document.getElementById('editCurrentClass').value = person.currentClass || "";
-            document.getElementById('editGroups').value = person.groups || "";
-            document.getElementById('editLabels').value = person.labels || "";
-            document.getElementById('editNotes').value = person.notes || "";
-            document.getElementById('editRelations').value = person.relations || "";
-
-            if (person.timetableImg) {
-                document.getElementById('timetablePreview').src = person.timetableImg;
-                document.getElementById('timetablePreview').style.display = 'block';
-                document.getElementById('editTimetableBase64').value = person.timetableImg;
+            // Image
+            if(p.image) {
+                document.getElementById('imgPreview').src = p.image;
+                document.getElementById('imgPreview').style.display = 'block';
+                document.getElementById('editImgBase64').value = p.image;
                 document.getElementById('removeImgBtn').style.display = 'inline-block';
             } else {
                 removeImage();
             }
         }
 
-        function saveProfile() {
-            const id = document.getElementById('editId').value;
-            let person = db.persons.find(p => p.id === id);
+        function clearForm() {
+            ['editName', 'editCurrentClass', 'editOldClass', 'editOrigin', 'editGroups', 'editRelations', 'editNotes'].forEach(id => {
+                document.getElementById(id).value = "";
+            });
+            currentEditingLabels = new Set();
+            renderLabelsEditor();
+            removeImage();
+            document.getElementById('autocompleteBox').style.display = 'none';
+        }
+
+        // AUTO-COMPLÉTION INTELLIGENTE : Recherche dans les anciennes données
+        function handleAutocomplete(e) {
+            const query = e.target.value.toLowerCase();
+            const box = document.getElementById('autocompleteBox');
+            box.innerHTML = "";
             
-            const isNew = !person;
-            if (isNew) {
-                person = { id: id };
-                db.persons.push(person);
+            if(query.length < 2) {
+                box.style.display = 'none';
+                return;
             }
 
-            person.name = document.getElementById('editName').value;
-            person.origin = document.getElementById('editOrigin').value;
-            person.oldClass = document.getElementById('editOldClass').value;
-            person.currentClass = document.getElementById('editCurrentClass').value;
-            person.groups = document.getElementById('editGroups').value;
-            person.labels = document.getElementById('editLabels').value;
-            person.notes = document.getElementById('editNotes').value;
-            person.relations = document.getElementById('editRelations').value;
-            person.timetableImg = document.getElementById('editTimetableBase64').value;
+            // On cherche des personnes existantes (généralement celles de l'annuaire sans currentClass)
+            const matches = db.persons.filter(p => p.name.toLowerCase().includes(query)).slice(0, 5);
 
-            document.getElementById('profileTitle').innerText = person.name;
-            
-            saveData();
-            renderList();
-            
-            // Indication visuelle de sauvegarde
-            const btn = document.querySelector('.profile-header .btn');
-            const oldText = btn.innerText;
-            btn.innerText = "✅ Sauvegardé !";
-            btn.style.background = "#10B981";
-            setTimeout(() => {
-                btn.innerText = oldText;
-                btn.style.background = "var(--primary)";
-            }, 2000);
+            if(matches.length > 0) {
+                box.style.display = 'block';
+                matches.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'ac-item';
+                    let metaInfo = (m.oldClass ? `Ex: ${m.oldClass}` : '') + (m.relations ? ` | Parents: ${m.relations}` : '');
+                    div.innerHTML = `<div class="ac-name">${m.name}</div><div class="ac-meta">${metaInfo}</div>`;
+                    
+                    // Si on clique sur la suggestion, on fusionne les données !
+                    div.onclick = () => {
+                        // On garde l'ID de l'ancien profil pour le mettre à jour plutôt que de créer un doublon
+                        document.getElementById('editId').value = m.id;
+                        document.getElementById('editName').value = m.name;
+                        
+                        // On propose l'ancienne classe
+                        if(!document.getElementById('editOldClass').value) document.getElementById('editOldClass').value = m.oldClass || "";
+                        
+                        // On ramène les parents !
+                        if(!document.getElementById('editRelations').value) document.getElementById('editRelations').value = m.relations || "";
+                        
+                        // On charge ses labels existants
+                        m.labels.forEach(l => currentEditingLabels.add(l));
+                        renderLabelsEditor();
+                        
+                        box.style.display = 'none';
+                    };
+                    box.appendChild(div);
+                });
+            } else {
+                box.style.display = 'none';
+            }
         }
 
-        function updateFilters() {
-            // Optionnel : mettre à jour la liste des filtres quand on tape une nouvelle classe
+        // Facher la boite de suggestions si on clique ailleurs
+        document.addEventListener('click', (e) => {
+            if(e.target.id !== 'editName') document.getElementById('autocompleteBox').style.display = 'none';
+        });
+
+        // 6. SYSTÈME DE LABELS
+        function renderLabelsEditor() {
+            const container = document.getElementById('labelsEditor');
+            container.innerHTML = "";
+            
+            db.labels.forEach(label => {
+                const span = document.createElement('span');
+                const isActive = currentEditingLabels.has(label);
+                span.className = `tag ${isActive ? '' : 'inactive'}`;
+                span.innerText = label;
+                span.onclick = () => {
+                    if(isActive) currentEditingLabels.delete(label);
+                    else currentEditingLabels.add(label);
+                    renderLabelsEditor();
+                };
+                container.appendChild(span);
+            });
         }
 
-        // 5. GESTION DES IMAGES (Redimensionnement pour éviter de remplir le localstorage)
-        function handleImageUpload(event) {
+        function createLabel() {
+            const input = document.getElementById('newLabelInput');
+            const val = input.value.trim();
+            if(val && !db.labels.includes(val)) {
+                db.labels.push(val);
+                currentEditingLabels.add(val); // L'ajoute directement à la personne
+                input.value = "";
+                renderLabelsEditor();
+                saveDB(); // Sauvegarde le nouveau label dispo pour tous
+            }
+        }
+
+        // 7. SAUVEGARDE ET IMAGES
+        function saveProfile() {
+            const id = document.getElementById('editId').value;
+            let pIndex = db.persons.findIndex(x => x.id === id);
+            
+            let personData = {
+                id: id,
+                name: document.getElementById('editName').value,
+                currentClass: document.getElementById('editCurrentClass').value,
+                oldClass: document.getElementById('editOldClass').value,
+                origin: document.getElementById('editOrigin').value,
+                groups: document.getElementById('editGroups').value,
+                relations: document.getElementById('editRelations').value,
+                notes: document.getElementById('editNotes').value,
+                labels: Array.from(currentEditingLabels),
+                image: document.getElementById('editImgBase64').value
+            };
+
+            if(pIndex > -1) db.persons[pIndex] = personData;
+            else db.persons.push(personData);
+
+            document.getElementById('profileTitle').innerText = personData.name;
+            saveDB();
+
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = "✅ Enregistré";
+            btn.style.background = "#10b981";
+            setTimeout(() => { btn.innerHTML = "💾 Enregistrer"; btn.style.background = "var(--primary)"; }, 2000);
+        }
+
+        function handleImage(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    // Redimensionner via un Canvas pour limiter le poids
                     const canvas = document.createElement('canvas');
                     const MAX_WIDTH = 800;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
+                    let w = img.width, h = img.height;
+                    if (w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; }
+                    canvas.width = w; canvas.height = h;
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // compression JPEG 70%
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compression forte (60%) pour ne pas saturer le stockage
                     
-                    document.getElementById('timetablePreview').src = dataUrl;
-                    document.getElementById('timetablePreview').style.display = 'block';
-                    document.getElementById('editTimetableBase64').value = dataUrl;
+                    document.getElementById('imgPreview').src = dataUrl;
+                    document.getElementById('imgPreview').style.display = 'block';
+                    document.getElementById('editImgBase64').value = dataUrl;
                     document.getElementById('removeImgBtn').style.display = 'inline-block';
                 }
                 img.src = e.target.result;
@@ -457,16 +530,24 @@
         }
 
         function removeImage() {
-            document.getElementById('timetablePreview').src = "";
-            document.getElementById('timetablePreview').style.display = 'none';
-            document.getElementById('editTimetableBase64').value = "";
-            document.getElementById('editTimetable').value = "";
+            document.getElementById('imgPreview').src = "";
+            document.getElementById('imgPreview').style.display = 'none';
+            document.getElementById('editImgBase64').value = "";
+            document.getElementById('editImg').value = "";
             document.getElementById('removeImgBtn').style.display = 'none';
         }
 
-        // Initialisation
-        window.onload = loadData;
-
+        // 8. NAVIGATION MOBILE
+        function showProfileScreen() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('profileView').style.display = 'block';
+            document.body.classList.add('view-profile'); // Bascule CSS pour mobile
+        }
+        
+        function goBack() {
+            document.body.classList.remove('view-profile');
+            renderList(); // Rafraichit la liste au cas où
+        }
     </script>
 </body>
 </html>
