@@ -3,765 +3,314 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Annuaire & Gestion ENT</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0c0f14;
-      --surface: #151921;
-      --surface2: #1c2230;
-      --border: rgba(255,255,255,.08);
-      --text: #e8ecf4;
-      --muted: #8b95a8;
-      --accent: #5b8def;
-      --accent-hover: #4a7bd4;
-      --student: #3ecf8e;
-      --teacher: #f5a623;
-      --personnel: #64b5f6;
-      --relative: #e879a9; /* Couleur dédiée aux parents / responsables */
-      --group-tag: #ab7efd;
-      --radius: 14px;
-      --shadow: 0 12px 40px rgba(0,0,0,.45);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(91,141,239,.15), transparent);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .app { position: relative; z-index: 1; max-width: 1650px; margin: 0 auto; padding: 24px; }
-
-    /* Header & Admin Toolbar */
-    header {
-      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
-      gap: 20px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
-    }
-    .brand h1 { font-family: 'Instrument Serif', serif; font-size: 2.6rem; font-weight: 400; }
-    .brand p { color: var(--muted); font-size: .95rem; margin-top: 2px; }
-    
-    .admin-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    .btn {
-      padding: 9px 16px; border-radius: 10px; font-weight: 600; font-size: .88rem;
-      cursor: pointer; transition: all .2s; border: none; font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
-    .btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
-    .btn-secondary:hover { border-color: var(--accent); }
-    .btn-danger { background: rgba(235, 87, 87, 0.15); color: #eb5757; border: 1px solid rgba(235, 87, 87, 0.3); }
-    .btn-danger:hover { background: rgba(235, 87, 87, 0.25); }
-
-    /* Layout & Sidebar */
-    .layout { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }
-    @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } }
-
-    aside { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: sticky; top: 24px; }
-    .filter-group { margin-bottom: 18px; }
-    .filter-label { font-size: .72rem; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 700; letter-spacing: .5px; }
-    
-    .search-box, .filter-select, .form-control {
-      width: 100%; background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 10px 14px; color: var(--text); font: inherit; font-size: .88rem; outline: none;
-    }
-    .search-box:focus, .form-control:focus, .filter-select:focus { border-color: var(--accent); }
-
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip {
-      border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
-      border-radius: 999px; padding: 4px 11px; font-size: .78rem; cursor: pointer; user-select: none; transition: all .15s;
-    }
-    .chip.active { color: #fff; border-color: transparent; }
-    .chip[data-type="Student"].active { background: var(--student); color: #052e16; font-weight: 600; }
-    .chip[data-type="Teacher"].active { background: var(--teacher); color: #1a1200; font-weight: 600; }
-    .chip[data-type="Personnel"].active { background: var(--personnel); color: #0a2540; font-weight: 600; }
-    .chip[data-type="Relative"].active { background: var(--relative); color: #3b0a1e; font-weight: 600; }
-
-    /* Main Toolbar */
-    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .result-count { font-size: .88rem; color: var(--muted); }
-    .view-tabs { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
-    .view-tab { padding: 6px 14px; border: none; background: transparent; color: var(--muted); border-radius: 8px; cursor: pointer; font-size: .82rem; font-weight: 500; }
-    .view-tab.active { background: var(--surface2); color: var(--text); }
-
-    /* Cards Grid */
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
-    .card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 18px; cursor: pointer; transition: transform .15s, border-color .15s, box-shadow .15s;
-      position: relative; overflow: hidden;
-    }
-    .card:hover { transform: translateY(-3px); border-color: rgba(91,141,239,.4); box-shadow: var(--shadow); }
-    
-    .card-top { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
-    .avatar { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; color: #fff; font-size: 1rem; }
-    .avatar.Student { background: linear-gradient(135deg, #2da86a, var(--student)); color: #042111; }
-    .avatar.Teacher { background: linear-gradient(135deg, #d4890f, var(--teacher)); color: #1a1200; }
-    .avatar.Personnel { background: linear-gradient(135deg, #3d8fd4, var(--personnel)); color: #071f38; }
-    .avatar.Relative { background: linear-gradient(135deg, #c44d7a, var(--relative)); color: #2e0514; }
-
-    .card-name { font-weight: 600; font-size: .98rem; line-height: 1.2; }
-    .badge { font-size: .65rem; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-top: 5px; display: inline-block; letter-spacing: .5px; }
-    .badge.Student { background: rgba(62,207,142,.15); color: var(--student); }
-    .badge.Teacher { background: rgba(245,166,35,.15); color: var(--teacher); }
-    .badge.Personnel { background: rgba(100,181,246,.15); color: var(--personnel); }
-    .badge.Relative { background: rgba(232,121,169,.2); color: var(--relative); }
-
-    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-    .tag { font-size: .72rem; padding: 3px 8px; border-radius: 6px; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
-    .tag.old-class { border-color: rgba(235,87,87,.3); color: #f87171; text-decoration: line-through; }
-    .tag.new-class { border-color: rgba(62,207,142,.4); color: #3ecf8e; font-weight: 600; }
-    .tag.group { border-color: rgba(171,126,253,.3); color: var(--group-tag); }
-
-    /* Modals & Slide Drawer */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(5px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
-    .overlay.open { display: flex; }
-    
-    .modal {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
-      width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; padding: 26px; box-shadow: var(--shadow);
-      position: relative; animation: modalIn .2s ease-out;
-    }
-    @keyframes modalIn { from { transform: scale(.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
-    .modal-header h2 { font-family: 'Instrument Serif', serif; font-size: 2rem; font-weight: 400; }
-    .modal-close { background: var(--surface2); border: none; color: var(--muted); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; }
-    .modal-close:hover { color: #fff; background: rgba(255,255,255,.1); }
-
-    .form-group { margin-bottom: 16px; }
-    .form-label { display: block; font-size: .78rem; font-weight: 600; margin-bottom: 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-    /* Profile Detail View */
-    .profile-header { display: flex; gap: 18px; align-items: center; margin-bottom: 20px; }
-    .profile-avatar { width: 68px; height: 68px; border-radius: 16px; font-size: 1.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-    .profile-info h3 { font-size: 1.5rem; font-weight: 700; }
-    
-    .section-title { font-size: .8rem; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 20px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
-    
-    .relation-list { display: flex; flex-direction: column; gap: 8px; }
-    .relation-item {
-      display: flex; justify-content: space-between; align-items: center;
-      background: var(--surface2); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
-    }
-    .relation-item:hover { border-color: var(--accent); }
-    .relation-link { color: var(--text); font-weight: 600; text-decoration: none; cursor: pointer; }
-    .relation-link:hover { color: var(--accent); }
-    .relation-role { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--muted); }
-
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: var(--surface2); padding: 14px; border-radius: 12px; border: 1px solid var(--border); }
-    .info-item label { display: block; font-size: .72rem; color: var(--muted); font-weight: 600; }
-    .info-item span { font-weight: 500; font-size: .92rem; }
-  </style>
+  <title>Gestion des Groupes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="app">
-    <header>
-      <div class="brand">
-        <h1>Annuaire ENT — Administration</h1>
-        <p>Gestion des profils, affectations, sous-groupes et relations scolaires</p>
-      </div>
-      <div class="admin-actions">
-        <input type="file" id="importDbInput" accept=".json" style="display: none;">
-        <button class="btn btn-secondary" onclick="exportData()">💾 Exporter DB</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('importDbInput').click()">📁 Importer DB</button>
-        <button class="btn btn-primary" onclick="openEditModal()">+ Nouveau Profil</button>
-      </div>
-    </header>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-    <div class="layout">
-      <aside>
-        <div class="filter-group">
-          <div class="filter-label">Recherche</div>
-          <input type="search" class="search-box" id="searchInput" placeholder="Nom, prénom...">
-        </div>
-
-        <div class="filter-group">
-          <div class="filter-label">Profil</div>
-          <div class="chips" id="typeChips">
-            <button class="chip" data-type="Student">Élève</button>
-            <button class="chip" data-type="Teacher">Enseignant</button>
-            <button class="chip" data-type="Personnel">Personnel</button>
-            <button class="chip" data-type="Relative">Parent / Tuteur</button>
-          </div>
-        </div>
-
-        <div class="filter-group">
-          <div class="filter-label">Ancienne Classe</div>
-          <select class="filter-select" id="oldClassFilter">
-            <option value="">Toutes les anciennes classes</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <div class="filter-label">Nouvelle Classe</div>
-          <select class="filter-select" id="newClassFilter">
-            <option value="">Toutes les nouvelles classes</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <div class="filter-label">Groupe / Spécialité</div>
-          <select class="filter-select" id="groupFilter">
-            <option value="">Tous les groupes</option>
-          </select>
-        </div>
-
-        <button class="btn btn-secondary" style="width: 100%; margin-top: 8px;" id="resetBtn">Réinitialiser les filtres</button>
-      </aside>
-
-      <main>
-        <div class="toolbar">
-          <div class="result-count"><span id="resultCount">0</span> profil(s) affiché(s)</div>
-          <div class="view-tabs">
-            <button class="view-tab active" data-view="grid">Vue Grille</button>
-            <button class="view-tab" data-view="class">Par Nouvelle Classe</button>
-            <button class="view-tab" data-view="group">Par Groupe / Spé</button>
-          </div>
-        </div>
-        <div id="content"></div>
-      </main>
+  <!-- En-tête -->
+  <header class="bg-slate-900 text-white p-4 shadow-md flex justify-between items-center">
+    <h1 class="text-xl font-bold">Gestionnaire de Groupes</h1>
+    <div class="flex items-center gap-4">
+      <label class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg cursor-pointer text-sm font-medium transition">
+        Importer JSON
+        <input type="file" id="jsonInput" accept=".json" class="hidden">
+      </label>
+      <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50" disabled>
+        Exporter JSON
+      </button>
     </div>
-  </div>
+  </header>
 
-  <!-- MODAL : VOIR PROFIL ET RELATIONS -->
-  <div class="overlay" id="viewModalOverlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>Fiche Profil</h2>
-        <button class="modal-close" onclick="closeModal('viewModalOverlay')">×</button>
-      </div>
-      <div id="profileDetailContent"></div>
-    </div>
-  </div>
-
-  <!-- MODAL : CRÉER / ÉDITER PROFIL -->
-  <div class="overlay" id="editModalOverlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="editModalTitle">Éditer le profil</h2>
-        <button class="modal-close" onclick="closeModal('editModalOverlay')">×</button>
-      </div>
-      <form id="personForm">
-        <input type="hidden" id="f_id">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Prénom *</label>
-            <input type="text" class="form-control" id="f_prenom" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nom *</label>
-            <input type="text" class="form-control" id="f_nom" required>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Type de profil *</label>
-          <select class="form-control" id="f_type">
+  <!-- Contenu Principal -->
+  <main class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
+    
+    <!-- Colonne de gauche : Annuaire des personnes -->
+    <section class="lg:col-span-5 bg-white p-5 rounded-xl shadow flex flex-col h-[780px]">
+      <h2 class="text-lg font-semibold border-b pb-3 mb-4">Annuaire des membres</h2>
+      
+      <!-- Filtres et recherche -->
+      <div class="space-y-3 mb-4">
+        <input type="text" id="searchInput" placeholder="Rechercher un nom..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        <div class="flex gap-2">
+          <select id="classFilter" class="w-1/2 border border-slate-300 rounded-lg p-2 text-sm outline-none">
+            <option value="">Toutes les classes</option>
+          </select>
+          <select id="typeFilter" class="w-1/2 border border-slate-300 rounded-lg p-2 text-sm outline-none">
+            <option value="">Tous les rôles</option>
             <option value="Student">Élève</option>
             <option value="Teacher">Enseignant</option>
             <option value="Personnel">Personnel</option>
-            <option value="Relative">Parent / Responsable légal</option>
           </select>
         </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Ancienne Classe</label>
-            <input type="text" class="form-control" id="f_oldClass" placeholder="Ex: 2GT6 (Saisie manuelle)">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nouvelle Classe</label>
-            <input type="text" class="form-control" id="f_newClass" placeholder="Ex: 1G2 (Saisie manuelle)">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Groupes / Spécialités (séparés par des virgules)</label>
-          <input type="text" class="form-control" id="f_groups" placeholder="Ex: Spé Maths, Gr 2, STI2D-A">
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Email (Facultatif)</label>
-            <input type="email" class="form-control" id="f_email" placeholder="email@exemple.fr">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Téléphone (Facultatif)</label>
-            <input type="tel" class="form-control" id="f_phone" placeholder="06 00 00 00 00">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Notes d'administration / Remarques</label>
-          <textarea class="form-control" id="f_notes" rows="2" placeholder="Informations complémentaires..."></textarea>
-        </div>
-
-        <div style="display:flex; justify-content: space-between; margin-top:20px;">
-          <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none;" onclick="deleteCurrentPerson()">Supprimer</button>
-          <div style="display:flex; gap:10px; margin-left:auto;">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('editModalOverlay')">Annuler</button>
-            <button type="submit" class="btn btn-primary">Enregistrer</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL : AJOUTER UNE RELATION -->
-  <div class="overlay" id="relationModalOverlay">
-    <div class="modal" style="max-width: 480px;">
-      <div class="modal-header">
-        <h2>Lier une personne</h2>
-        <button class="modal-close" onclick="closeModal('relationModalOverlay')">×</button>
       </div>
-      <form id="relationForm">
-        <input type="hidden" id="rel_from_id">
-        <div class="form-group">
-          <label class="form-label">Personne à lier</label>
-          <select class="form-control" id="rel_target_id" required>
-            <!-- Rempli en JS -->
-          </select>
+
+      <!-- Liste des personnes -->
+      <div id="peopleList" class="flex-1 overflow-y-auto space-y-2 pr-1 border-t pt-3">
+        <p class="text-slate-400 text-sm text-center mt-10">Veuillez importer un fichier JSON.</p>
+      </div>
+    </section>
+
+    <!-- Colonne de droite : Gestion des groupes -->
+    <section class="lg:col-span-7 bg-white p-5 rounded-xl shadow flex flex-col h-[780px]">
+      <h2 class="text-lg font-semibold border-b pb-3 mb-4">Groupes</h2>
+
+      <!-- Création de groupe -->
+      <div class="flex gap-2 mb-6">
+        <input type="text" id="newGroupName" placeholder="Nom du nouveau groupe (ex: Groupe Projets)..." class="flex-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        <button id="createGroupBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+          Créer Groupe
+        </button>
+      </div>
+
+      <!-- Sélecteur de groupe actif -->
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Groupe sélectionné</label>
+        <select id="groupSelect" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none font-medium">
+          <option value="">-- Aucun groupe --</option>
+        </select>
+      </div>
+
+      <!-- Zone du groupe sélectionné -->
+      <div id="activeGroupContainer" class="flex-1 border rounded-xl p-4 flex flex-col bg-slate-50">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="activeGroupName" class="font-bold text-slate-700">Aucun groupe sélectionné</h3>
+          <button id="deleteGroupBtn" class="text-red-500 hover:text-red-700 text-xs font-semibold hidden">Supprimer ce groupe</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Rôle / Relation</label>
-          <select class="form-control" id="rel_role">
-            <option value="Père">Père</option>
-            <option value="Mère">Mère</option>
-            <option value="Parent / Tuteur">Parent / Tuteur</option>
-            <option value="Enfant">Enfant</option>
-            <option value="Enseignant">Enseignant référent</option>
-            <option value="Élève">Élève rattaché</option>
-          </select>
+
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Membres affectés (<span id="memberCount">0</span>)</p>
+        
+        <div id="groupMembersList" class="flex-1 overflow-y-auto space-y-2 pr-1 bg-white border rounded-lg p-3">
+          <p class="text-slate-400 text-sm text-center mt-10">Sélectionnez un groupe pour voir ses membres.</p>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Créer la relation</button>
-      </form>
-    </div>
-  </div>
+      </div>
+    </section>
+
+  </main>
 
   <script>
-    // --- BASE DE DONNÉES INITIALE ---
-    let USERS = [
-      {
-        id: "1",
-        firstName: "Matheo",
-        lastName: "BUGRA",
-        type: "Student",
-        oldClass: "2GT6",
-        newClass: "1G2",
-        groups: ["Spé Maths", "Spé NSI"],
-        email: "m.bugra@ent.fr",
-        phone: "06 12 34 56 78",
-        notes: "Délégué de classe",
-        relations: [{ targetId: "5", role: "Père" }, { targetId: "4", role: "Enseignant" }]
-      },
-      {
-        id: "2",
-        firstName: "Fatma Ela",
-        lastName: "UCAN",
-        type: "Student",
-        oldClass: "2GT1",
-        newClass: "1G1",
-        groups: ["Spé Maths", "Groupe A"],
-        email: "", phone: "", notes: "",
-        relations: []
-      },
-      {
-        id: "3",
-        firstName: "Aubane",
-        lastName: "DRELA",
-        type: "Student",
-        oldClass: "1G2",
-        newClass: "TG2",
-        groups: ["Option Arts"],
-        email: "", phone: "", notes: "",
-        relations: []
-      },
-      {
-        id: "4",
-        firstName: "Professeur",
-        lastName: "MARTIN",
-        type: "Teacher",
-        oldClass: "",
-        newClass: "SVT",
-        groups: ["1G2", "TG2"],
-        email: "p.martin@ac-versailles.fr", phone: "", notes: "PP de 1G2",
-        relations: []
-      },
-      {
-        id: "5",
-        firstName: "Ahmet",
-        lastName: "BUGRA",
-        type: "Relative",
-        oldClass: "",
-        newClass: "",
-        groups: [],
-        email: "ahmet.bugra@mail.fr",
-        phone: "07 89 00 11 22",
-        notes: "Responsable principal",
-        relations: [{ targetId: "1", role: "Enfant" }]
-      }
-    ];
+    let dbRawData = null;
+    let users = [];
+    let groups = {}; // Format : { "NomGroupe": ["id_user1", "id_user2"] }
+    let activeGroupName = null;
 
-    let state = { search: '', types: new Set(), oldClass: '', newClass: '', group: '', view: 'grid' };
-    const TYPE_LABELS = { Student: 'Élève', Teacher: 'Enseignant', Personnel: 'Personnel', Relative: 'Parent / Responsable' };
+    // Dom Elements
+    const jsonInput = document.getElementById('jsonInput');
+    const exportBtn = document.getElementById('exportBtn');
+    const peopleList = document.getElementById('peopleList');
+    const classFilter = document.getElementById('classFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const searchInput = document.getElementById('searchInput');
+    const newGroupName = document.getElementById('newGroupName');
+    const createGroupBtn = document.getElementById('createGroupBtn');
+    const groupSelect = document.getElementById('groupSelect');
+    const activeGroupNameEl = document.getElementById('activeGroupName');
+    const groupMembersList = document.getElementById('groupMembersList');
+    const memberCount = document.getElementById('memberCount');
+    const deleteGroupBtn = document.getElementById('deleteGroupBtn');
 
-    function initials(fn, ln) {
-      return ((fn ? fn[0] : '') + (ln ? ln[0] : '')).toUpperCase() || '?';
-    }
+    // Importation JSON
+    jsonInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-    function getFullName(u) {
-      return `${u.lastName.toUpperCase()} ${u.firstName}`;
-    }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          dbRawData = JSON.parse(event.target.result);
+          // Extraction du tableau users qu'il soit à la racine ou dans l'objet principal
+          users = Array.isArray(dbRawData) ? dbRawData : (dbRawData.users || []);
+          
+          if (!users.length) {
+            alert("Aucun utilisateur n'a été trouvé dans le fichier.");
+            return;
+          }
 
-    // --- MISE À JOUR DES FILTRES DE SÉLECTION ---
-    function updateDropdowns() {
-      const oldClasses = new Set(), newClasses = new Set(), groups = new Set();
-      USERS.forEach(u => {
-        if (u.oldClass) oldClasses.add(u.oldClass);
-        if (u.newClass) newClasses.add(u.newClass);
-        if (u.groups) u.groups.forEach(g => groups.add(g));
-      });
-
-      const populate = (id, set, placeholder) => {
-        const el = document.getElementById(id);
-        const current = el.value;
-        el.innerHTML = `<option value="">${placeholder}</option>` +
-          Array.from(set).sort().map(v => `<option value="${v}">${v}</option>`).join('');
-        el.value = current;
-      };
-
-      populate('oldClassFilter', oldClasses, 'Toutes les anciennes classes');
-      populate('newClassFilter', newClasses, 'Toutes les nouvelles classes');
-      populate('groupFilter', groups, 'Tous les groupes / spé');
-    }
-
-    // --- APPLICATION DES FILTRES & RENDU ---
-    function applyFilters() {
-      const q = state.search.toLowerCase();
-      const filtered = USERS.filter(u => {
-        if (state.types.size && !state.types.has(u.type)) return false;
-        if (state.oldClass && u.oldClass !== state.oldClass) return false;
-        if (state.newClass && u.newClass !== state.newClass) return false;
-        if (state.group && (!u.groups || !u.groups.includes(state.group))) return false;
-        if (q) {
-          const full = `${u.firstName} ${u.lastName} ${u.oldClass} ${u.newClass}`.toLowerCase();
-          if (!full.includes(q)) return false;
+          initGroupsFromUsers();
+          populateClassFilter();
+          renderPeopleList();
+          renderGroupSelect();
+          exportBtn.disabled = false;
+        } catch (err) {
+          alert("Erreur lors de la lecture du fichier JSON. Vérifiez la syntaxe.");
         }
-        return true;
-      });
+      };
+      reader.readAsText(file);
+    });
 
-      document.getElementById('resultCount').textContent = filtered.length;
-      const content = document.getElementById('content');
+    // Remplit la structure des groupes à partir des attributs 'groups' existants
+    function initGroupsFromUsers() {
+      groups = {};
+      users.forEach(u => {
+        if (!u.groups) u.groups = [];
+        u.groups.forEach(gName => {
+          if (!groups[gName]) groups[gName] = [];
+          if (!groups[gName].includes(u.id)) groups[gName].push(u.id);
+        });
+      });
+    }
+
+    // Filtres
+    function populateClassFilter() {
+      const classes = new Set();
+      users.forEach(u => (u.classes || []).forEach(c => classes.add(c)));
+      classFilter.innerHTML = '<option value="">Toutes les classes</option>';
+      Array.from(classes).sort().forEach(c => {
+        classFilter.innerHTML += `<option value="${c}">${c}</option>`;
+      });
+    }
+
+    searchInput.addEventListener('input', renderPeopleList);
+    classFilter.addEventListener('change', renderPeopleList);
+    typeFilter.addEventListener('change', renderPeopleList);
+
+    function renderPeopleList() {
+      const query = searchInput.value.toLowerCase();
+      const selectedClass = classFilter.value;
+      const selectedType = typeFilter.value;
+
+      const filtered = users.filter(u => {
+        const matchName = u.displayName.toLowerCase().includes(query) || u.login.toLowerCase().includes(query);
+        const matchClass = !selectedClass || (u.classes && u.classes.includes(selectedClass));
+        const matchType = !selectedType || u.type === selectedType;
+        return matchName && matchClass && matchType;
+      });
 
       if (!filtered.length) {
-        content.innerHTML = `<div style="text-align:center; padding: 60px; color:var(--muted);">Aucun profil ne correspond à la recherche</div>`;
+        peopleList.innerHTML = '<p class="text-slate-400 text-sm text-center mt-5">Aucun résultat.</p>';
         return;
       }
 
-      if (state.view === 'grid') {
-        content.innerHTML = `<div class="grid">${filtered.map(renderCard).join('')}</div>`;
-      } else if (state.view === 'class') {
-        renderGroupedView(content, filtered, 'newClass', 'Nouvelle classe');
-      } else if (state.view === 'group') {
-        // Regroupement par sous-groupes / spécialités
-        const byGroup = {};
-        filtered.forEach(u => {
-          if (u.groups && u.groups.length) {
-            u.groups.forEach(g => {
-              if (!byGroup[g]) byGroup[g] = [];
-              byGroup[g].push(u);
-            });
-          } else {
-            if (!byGroup['Sans groupe']) byGroup['Sans groupe'] = [];
-            byGroup['Sans groupe'].push(u);
-          }
-        });
-        content.innerHTML = Object.keys(byGroup).sort().map(g => `
-          <div style="margin-bottom:28px;">
-            <h3 style="font-family:'Instrument Serif'; font-size:1.6rem; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:6px; color:var(--group-tag);">
-              Groupe : ${g} (${byGroup[g].length})
-            </h3>
-            <div class="grid">${byGroup[g].map(renderCard).join('')}</div>
+      peopleList.innerHTML = filtered.map(u => {
+        const isAssignedToActive = activeGroupName && groups[activeGroupName] && groups[activeGroupName].includes(u.id);
+        const userClasses = (u.classes || []).join(', ') || 'N/A';
+        
+        return `
+          <div class="flex items-center justify-between p-2 border rounded-lg hover:bg-slate-50 text-sm">
+            <div>
+              <p class="font-medium text-slate-800">${u.displayName}</p>
+              <p class="text-xs text-slate-500">${u.type} — Classe : ${userClasses}</p>
+            </div>
+            ${activeGroupName ? `
+              <button onclick="toggleAssign('${u.id}')" class="px-3 py-1 rounded text-xs font-semibold transition ${isAssignedToActive ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}">
+                ${isAssignedToActive ? 'Retirer' : 'Ajouter'}
+              </button>
+            ` : ''}
           </div>
-        `).join('');
-      }
+        `;
+      }).join('');
     }
 
-    function renderGroupedView(container, list, key, label) {
-      const grouped = {};
-      list.forEach(u => {
-        const val = u[key] || 'Non renseigné';
-        if (!grouped[val]) grouped[val] = [];
-        grouped[val].push(u);
+    // Gestion des Groupes
+    createGroupBtn.addEventListener('click', () => {
+      const name = newGroupName.value.trim();
+      if (!name) return;
+      if (groups[name]) {
+        alert("Ce groupe existe déjà.");
+        return;
+      }
+      groups[name] = [];
+      newGroupName.value = '';
+      renderGroupSelect(name);
+    });
+
+    function renderGroupSelect(selectGroup = activeGroupName) {
+      groupSelect.innerHTML = '<option value="">-- Aucun groupe --</option>';
+      Object.keys(groups).sort().forEach(g => {
+        groupSelect.innerHTML += `<option value="${g}" ${g === selectGroup ? 'selected' : ''}>${g} (${groups[g].length})</option>`;
       });
-      container.innerHTML = Object.keys(grouped).sort().map(k => `
-        <div style="margin-bottom:28px;">
-          <h3 style="font-family:'Instrument Serif'; font-size:1.6rem; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:6px;">
-            ${label} : ${k} (${grouped[k].length})
-          </h3>
-          <div class="grid">${grouped[k].map(renderCard).join('')}</div>
+      selectGroupHandler(selectGroup);
+    }
+
+    groupSelect.addEventListener('change', (e) => selectGroupHandler(e.target.value));
+
+    function selectGroupHandler(gName) {
+      activeGroupName = gName || null;
+      if (!activeGroupName) {
+        activeGroupNameEl.textContent = "Aucun groupe sélectionné";
+        groupMembersList.innerHTML = '<p class="text-slate-400 text-sm text-center mt-10">Sélectionnez un groupe pour voir ses membres.</p>';
+        memberCount.textContent = '0';
+        deleteGroupBtn.classList.add('hidden');
+      } else {
+        activeGroupNameEl.textContent = activeGroupName;
+        deleteGroupBtn.classList.remove('hidden');
+        renderActiveGroupMembers();
+      }
+      renderPeopleList();
+    }
+
+    function renderActiveGroupMembers() {
+      const memberIds = groups[activeGroupName] || [];
+      memberCount.textContent = memberIds.length;
+
+      if (!memberIds.length) {
+        groupMembersList.innerHTML = '<p class="text-slate-400 text-sm text-center mt-10">Aucun membre dans ce groupe.</p>';
+        return;
+      }
+
+      const assignedUsers = users.filter(u => memberIds.includes(u.id));
+      groupMembersList.innerHTML = assignedUsers.map(u => `
+        <div class="flex items-center justify-between p-2 border-b last:border-b-0 text-sm">
+          <div>
+            <span class="font-medium text-slate-800">${u.displayName}</span>
+            <span class="text-xs text-slate-400 ml-2">(${u.type})</span>
+          </div>
+          <button onclick="toggleAssign('${u.id}')" class="text-red-500 hover:text-red-700 text-xs font-semibold">
+            Retirer
+          </button>
         </div>
       `).join('');
     }
 
-    function renderCard(u) {
-      return `
-        <article class="card" onclick="openViewModal('${u.id}')">
-          <div class="card-top">
-            <div class="avatar ${u.type}">${initials(u.firstName, u.lastName)}</div>
-            <div>
-              <div class="card-name">${getFullName(u)}</div>
-              <span class="badge ${u.type}">${TYPE_LABELS[u.type] || u.type}</span>
-            </div>
-          </div>
-          <div class="tag-row">
-            ${u.oldClass ? `<span class="tag old-class">Ancienne: ${u.oldClass}</span>` : ''}
-            ${u.newClass ? `<span class="tag new-class">Nouvelle: ${u.newClass}</span>` : ''}
-            ${(u.groups || []).map(g => `<span class="tag group">${g}</span>`).join('')}
-          </div>
-        </article>
-      `;
-    }
+    // Ajout/Suppression d'un utilisateur au groupe actif
+    window.toggleAssign = function(userId) {
+      if (!activeGroupName) return;
 
-    // --- MODAL VOIR PROFIL & RELATIONS ---
-    function openViewModal(id) {
-      const u = USERS.find(x => x.id === id);
-      if (!u) return;
+      const groupMembers = groups[activeGroupName];
+      const index = groupMembers.indexOf(userId);
 
-      let relationsHtml = '<p style="color:var(--muted); font-size:.85rem;">Aucune relation enregistrée.</p>';
-      if (u.relations && u.relations.length) {
-        relationsHtml = u.relations.map(r => {
-          const target = USERS.find(x => x.id === r.targetId);
-          if (!target) return '';
-          return `
-            <div class="relation-item">
-              <div>
-                <a class="relation-link" onclick="openViewModal('${target.id}')">${getFullName(target)}</a>
-                <span class="badge ${target.type}" style="margin-left:6px;">${TYPE_LABELS[target.type]}</span>
-              </div>
-              <span class="relation-role">${r.role}</span>
-            </div>
-          `;
-        }).join('');
-      }
-
-      document.getElementById('profileDetailContent').innerHTML = `
-        <div class="profile-header">
-          <div class="profile-avatar avatar ${u.type}">${initials(u.firstName, u.lastName)}</div>
-          <div class="profile-info">
-            <h3>${getFullName(u)}</h3>
-            <span class="badge ${u.type}">${TYPE_LABELS[u.type]}</span>
-          </div>
-        </div>
-
-        <div class="info-grid">
-          <div class="info-item"><label>Ancienne Classe</label><span>${u.oldClass || '—'}</span></div>
-          <div class="info-item"><label>Nouvelle Classe</label><span>${u.newClass || '—'}</span></div>
-          <div class="info-item" style="grid-column: span 2;">
-            <label>Groupes / Spécialités</label>
-            <span>${(u.groups && u.groups.length) ? u.groups.join(', ') : '—'}</span>
-          </div>
-          <div class="info-item"><label>Email</label><span>${u.email || '—'}</span></div>
-          <div class="info-item"><label>Téléphone</label><span>${u.phone || '—'}</span></div>
-        </div>
-
-        ${u.notes ? `<div style="margin-top:12px; background:var(--surface2); padding:10px 14px; border-radius:10px; border:1px solid var(--border); font-size:.85rem;"><strong style="color:var(--muted);">Note :</strong> ${u.notes}</div>` : ''}
-
-        <div class="section-title">Relations & Entourage</div>
-        <div class="relation-list">${relationsHtml}</div>
-
-        <div style="display:flex; gap:10px; margin-top:24px; justify-content: flex-end;">
-          <button class="btn btn-secondary" onclick="openRelationModal('${u.id}')">+ Lier une personne</button>
-          <button class="btn btn-primary" onclick="closeModal('viewModalOverlay'); openEditModal('${u.id}')">✏️ Éditer le profil</button>
-        </div>
-      `;
-
-      openModal('viewModalOverlay');
-    }
-
-    // --- MODAL CRÉER / ÉDITER ---
-    function openEditModal(id = null) {
-      const isEdit = !!id;
-      document.getElementById('editModalTitle').textContent = isEdit ? "Éditer le profil" : "Nouveau Profil";
-      document.getElementById('deleteBtn').style.display = isEdit ? "block" : "none";
-
-      if (isEdit) {
-        const u = USERS.find(x => x.id === id);
-        document.getElementById('f_id').value = u.id;
-        document.getElementById('f_prenom').value = u.firstName;
-        document.getElementById('f_nom').value = u.lastName;
-        document.getElementById('f_type').value = u.type;
-        document.getElementById('f_oldClass').value = u.oldClass || '';
-        document.getElementById('f_newClass').value = u.newClass || '';
-        document.getElementById('f_groups').value = u.groups ? u.groups.join(', ') : '';
-        document.getElementById('f_email').value = u.email || '';
-        document.getElementById('f_phone').value = u.phone || '';
-        document.getElementById('f_notes').value = u.notes || '';
+      const user = users.find(u => u.id === userId);
+      if (index === -1) {
+        groupMembers.push(userId);
+        if (!user.groups.includes(activeGroupName)) user.groups.push(activeGroupName);
       } else {
-        document.getElementById('personForm').reset();
-        document.getElementById('f_id').value = '';
+        groupMembers.splice(index, 1);
+        user.groups = user.groups.filter(g => g !== activeGroupName);
       }
 
-      openModal('editModalOverlay');
-    }
+      user.groupsCount = user.groups.length;
+      renderGroupSelect(activeGroupName);
+    };
 
-    document.getElementById('personForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const id = document.getElementById('f_id').value;
-      const rawGroups = document.getElementById('f_groups').value;
-      const groupsArr = rawGroups ? rawGroups.split(',').map(s => s.trim()).filter(Boolean) : [];
-
-      const payload = {
-        firstName: document.getElementById('f_prenom').value,
-        lastName: document.getElementById('f_nom').value,
-        type: document.getElementById('f_type').value,
-        oldClass: document.getElementById('f_oldClass').value.toUpperCase(),
-        newClass: document.getElementById('f_newClass').value.toUpperCase(),
-        groups: groupsArr,
-        email: document.getElementById('f_email').value,
-        phone: document.getElementById('f_phone').value,
-        notes: document.getElementById('f_notes').value,
-      };
-
-      if (id) {
-        const idx = USERS.findIndex(u => u.id === id);
-        USERS[idx] = { ...USERS[idx], ...payload };
-      } else {
-        payload.id = Date.now().toString();
-        payload.relations = [];
-        USERS.push(payload);
-      }
-
-      updateDropdowns();
-      applyFilters();
-      closeModal('editModalOverlay');
-    });
-
-    function deleteCurrentPerson() {
-      const id = document.getElementById('f_id').value;
-      if (confirm("Supprimer définitivement ce profil ?")) {
-        USERS = USERS.filter(u => u.id !== id);
-        // Supprimer aussi les relations liées
-        USERS.forEach(u => {
-          if (u.relations) u.relations = u.relations.filter(r => r.targetId !== id);
+    deleteGroupBtn.addEventListener('click', () => {
+      if (!activeGroupName) return;
+      if (confirm(`Voulez-vous supprimer le groupe "${activeGroupName}" ?`)) {
+        users.forEach(u => {
+          u.groups = (u.groups || []).filter(g => g !== activeGroupName);
+          u.groupsCount = u.groups.length;
         });
-        updateDropdowns();
-        applyFilters();
-        closeModal('editModalOverlay');
+        delete groups[activeGroupName];
+        renderGroupSelect(null);
       }
-    }
-
-    // --- MODAL AJOUTER RELATION ---
-    function openRelationModal(fromId) {
-      document.getElementById('rel_from_id').value = fromId;
-      const sel = document.getElementById('rel_target_id');
-      sel.innerHTML = USERS.filter(u => u.id !== fromId)
-        .map(u => `<option value="${u.id}">${getFullName(u)} (${TYPE_LABELS[u.type]})</option>`).join('');
-
-      openModal('relationModalOverlay');
-    }
-
-    document.getElementById('relationForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const fromId = document.getElementById('rel_from_id').value;
-      const targetId = document.getElementById('rel_target_id').value;
-      const role = document.getElementById('rel_role').value;
-
-      const fromUser = USERS.find(u => u.id === fromId);
-      if (fromUser) {
-        if (!fromUser.relations) fromUser.relations = [];
-        fromUser.relations.push({ targetId, role });
-      }
-
-      closeModal('relationModalOverlay');
-      openViewModal(fromId); // Recharger le profil
     });
 
-    // --- GESTION DES MODALES ---
-    function openModal(id) { document.getElementById(id).classList.add('open'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    // Exporter le fichier JSON
+    exportBtn.addEventListener('click', () => {
+      let exportData;
+      if (Array.isArray(dbRawData)) {
+        exportData = users;
+      } else {
+        exportData = { ...dbRawData, users };
+      }
 
-    // --- IMPORT / EXPORT JSON ---
-    function exportData() {
-      const blob = new Blob([JSON.stringify(USERS, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `annuaire_ent_${new Date().toISOString().slice(0,10)}.json`;
+      a.href = url;
+      a.download = 'annuaire_groupes_maj.json';
       a.click();
-    }
-
-    document.getElementById('importDbInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const data = JSON.parse(evt.target.result);
-          USERS = Array.isArray(data) ? data : (data.users || []);
-          updateDropdowns();
-          applyFilters();
-          alert("Base de données importée avec succès !");
-        } catch (err) {
-          alert("Erreur de format du fichier JSON.");
-        }
-      };
-      reader.readAsText(file);
-      e.target.value = '';
+      URL.revokeObjectURL(url);
     });
-
-    // --- ECOUTEURS DES FILTRES ---
-    document.getElementById('searchInput').addEventListener('input', e => { state.search = e.target.value; applyFilters(); });
-    document.getElementById('oldClassFilter').addEventListener('change', e => { state.oldClass = e.target.value; applyFilters(); });
-    document.getElementById('newClassFilter').addEventListener('change', e => { state.newClass = e.target.value; applyFilters(); });
-    document.getElementById('groupFilter').addEventListener('change', e => { state.group = e.target.value; applyFilters(); });
-
-    document.querySelectorAll('#typeChips .chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const t = chip.dataset.type;
-        if (state.types.has(t)) { state.types.delete(t); chip.classList.remove('active'); }
-        else { state.types.add(t); chip.classList.add('active'); }
-        applyFilters();
-      });
-    });
-
-    document.querySelectorAll('.view-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        state.view = tab.dataset.view;
-        applyFilters();
-      });
-    });
-
-    document.getElementById('resetBtn').addEventListener('click', () => {
-      state = { search: '', types: new Set(), oldClass: '', newClass: '', group: '', view: state.view };
-      document.getElementById('searchInput').value = '';
-      document.getElementById('oldClassFilter').value = '';
-      document.getElementById('newClassFilter').value = '';
-      document.getElementById('groupFilter').value = '';
-      document.querySelectorAll('#typeChips .chip').forEach(c => c.classList.remove('active'));
-      applyFilters();
-    });
-
-    // Initialisation
-    updateDropdowns();
-    applyFilters();
   </script>
 </body>
 </html>
